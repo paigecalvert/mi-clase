@@ -70,7 +70,7 @@ router.post('/', async (req, res) => {
 
     // fire-and-forget: report total class count to Replicated
     pool.query('SELECT COUNT(*)::int AS count FROM classes').then(({ rows: r }) => {
-      sendMetrics([{ key: 'total_classes', value: r[0].count }])
+      sendMetrics({ total_classes: r[0].count })
         .catch(err => console.warn('[replicated] metrics:', err.message));
     });
   } catch (err) {

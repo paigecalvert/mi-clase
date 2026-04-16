@@ -16,9 +16,19 @@ async function sdkPost(path, body) {
   return res.json();
 }
 
+async function sdkPatch(path, body) {
+  const res = await fetch(`${SDK_URL}${path}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`SDK ${path} returned ${res.status}`);
+  return res.json();
+}
+
 module.exports = {
   getLicenseField: (name) => sdkGet(`/license/fields/${name}`),
   getLicenseInfo:  ()     => sdkGet('/license/info'),
   getUpdates:      ()     => sdkGet('/app/updates'),
-  sendMetrics:     (data) => sdkPost('/app/custom-metrics', { data }),
+  sendMetrics:     (data) => sdkPatch('/app/custom-metrics', { data }),
 };
