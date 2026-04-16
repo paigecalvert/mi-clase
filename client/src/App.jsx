@@ -1,8 +1,24 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink, Routes, Route, Navigate } from 'react-router-dom';
 import MyClasses from './pages/MyClasses';
 import MyVocabulary from './pages/MyVocabulary';
 import MyHomework from './pages/MyHomework';
+import MyQuizzes from './pages/MyQuizzes';
+
+const bannerStyles = {
+  update: {
+    background: '#386641', color: '#fff',
+    padding: '10px 24px', fontSize: 14, textAlign: 'center',
+  },
+  expired: {
+    background: '#bc4749', color: '#fff',
+    padding: '10px 24px', fontSize: 14, textAlign: 'center',
+  },
+  expiring: {
+    background: '#e9c46a', color: '#333',
+    padding: '10px 24px', fontSize: 14, textAlign: 'center',
+  },
+};
 
 const styles = {
   header: {
@@ -32,8 +48,50 @@ const styles = {
 };
 
 export default function App() {
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [licenseState, setLicenseState] = useState(null); // null | 'expired' | 'expiring-soon'
+
+  useEffect(() => {
+    fetch('/api/updates')
+      .then(r => r.json())
+      .then(data => {
+        const updates = Array.isArray(data) ? data : (data?.updates ?? []);
+        if (updates.length > 0) setUpdateAvailable(true);
+      })
+      .catch(() => {});
+
+    fetch('/api/license')
+      .then(r => r.json())
+      .then(info => {
+        if (!info?.expires_at) return;
+        const expiresAt = new Date(info.expires_at);
+        const now = new Date();
+        if (expiresAt < now) {
+          setLicenseState('expired');
+        } else if ((expiresAt - now) < 30 * 24 * 60 * 60 * 1000) {
+          setLicenseState('expiring-soon');
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <>
+      {updateAvailable && (
+        <div style={bannerStyles.update}>
+          A new version of Mi Clase is available. Contact your administrator to upgrade.
+        </div>
+      )}
+      {licenseState === 'expired' && (
+        <div style={bannerStyles.expired}>
+          Your license has expired. Some features may be unavailable. Please renew your license.
+        </div>
+      )}
+      {licenseState === 'expiring-soon' && (
+        <div style={bannerStyles.expiring}>
+          Your license is expiring soon. Please renew to avoid interruption.
+        </div>
+      )}
       <header style={styles.header}>
         <span style={styles.title}>
           <img src="/logo.svg" alt="" style={{ width: 28, height: 28, marginRight: 8, verticalAlign: 'middle', filter: 'brightness(0) invert(1)' }} />
@@ -44,6 +102,7 @@ export default function App() {
             { to: '/classes', label: 'My Classes' },
             { to: '/vocabulary', label: 'My Vocabulary' },
             { to: '/homework', label: 'My Homework' },
+            { to: '/quizzes', label: 'My Quizzes' },
           ].map(({ to, label }) => (
             <NavLink
               key={to}
@@ -64,6 +123,7 @@ export default function App() {
           <Route path="/classes" element={<MyClasses />} />
           <Route path="/vocabulary" element={<MyVocabulary />} />
           <Route path="/homework" element={<MyHomework />} />
+          <Route path="/quizzes" element={<MyQuizzes />} />
         </Routes>
       </main>
     </>
