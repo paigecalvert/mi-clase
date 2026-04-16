@@ -1,6 +1,21 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
+const { getLicenseField } = require('../replicated');
+
+// Block all quiz routes when quiz_feature license field is not enabled.
+// Fails open when the SDK is unreachable (local dev without Replicated).
+router.use(async (req, res, next) => {
+  try {
+    const field = await getLicenseField('quiz_feature');
+    if (field.value !== 'true') {
+      return res.status(403).json({ error: 'quiz_feature_disabled' });
+    }
+  } catch {
+    // SDK unavailable — allow access so local dev still works
+  }
+  next();
+});
 
 // List all quizzes (summary)
 router.get('/', async (req, res) => {

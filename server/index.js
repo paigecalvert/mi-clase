@@ -6,6 +6,7 @@ const path = require('path');
 const { initDb, pool } = require('./db');
 const redis = require('./redis');
 const { initStorage } = require('./storage');
+const { getLicenseInfo, getUpdates } = require('./replicated');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -32,6 +33,17 @@ app.get('/health', async (req, res) => {
   }
 
   res.status(health.status === 'ok' ? 200 : 503).json(health);
+});
+
+// ── Replicated SDK proxy ──────────────────────────────────────────────────────
+app.get('/api/license', async (req, res) => {
+  try { res.json(await getLicenseInfo()); }
+  catch { res.json(null); }
+});
+
+app.get('/api/updates', async (req, res) => {
+  try { res.json(await getUpdates()); }
+  catch { res.json([]); }
 });
 
 // ── API routes ────────────────────────────────────────────────────────────────

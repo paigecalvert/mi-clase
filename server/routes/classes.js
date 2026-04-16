@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
+const { sendMetrics } = require('../replicated');
 
 // List all classes with their notes, vocab count, homework count
 router.get('/', async (req, res) => {
@@ -66,6 +67,12 @@ router.post('/', async (req, res) => {
     // create empty notes row
     await pool.query('INSERT INTO notes (class_id, content) VALUES ($1, $2)', [rows[0].id, '']);
     res.status(201).json(rows[0]);
+
+    // fire-and-forget: report total class count to Replicated
+    pool.query('SELECT COUNT(*)::int AS count FROM classes').then(({ rows: r }) => {
+      sendMetrics([{ key: 'total_classes', value: r[0].count }])
+        .catch(err => console.warn('[replicated] metrics:', err.message));
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to create class' });

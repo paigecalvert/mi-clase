@@ -2,7 +2,7 @@ apiVersion: v2
 name: mi-clase
 description: Spanish class tracker with notes, vocabulary, and homework management
 type: application
-version: 0.3.0
+version: 0.4.0
 appVersion: "1.0.0"
 dependencies:
   - name: postgresql
