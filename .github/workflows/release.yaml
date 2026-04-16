@@ -14,6 +14,7 @@ concurrency:
 
 env:
   IMAGE: ghcr.io/paigecalvert/mi-clase
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   version:
@@ -76,7 +77,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GHCR_TOKEN }}
 
       - uses: int128/docker-build-cache-config-action@v1
         id: cache
@@ -106,7 +107,8 @@ jobs:
       - name: Stamp image tag into chart values
         env:
           VERSION: ${{ needs.version.outputs.version }}
-        run: sed -i "s|tag:.*|tag: ${VERSION}|" helm/values.yaml
+        run: |
+          sed -i "s|tag:.*|tag: ${VERSION}|" helm/values.yaml
 
       - name: Package chart
         run: |

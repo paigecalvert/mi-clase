@@ -10,6 +10,7 @@ permissions:
 
 env:
   IMAGE: ghcr.io/paigecalvert/mi-clase
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build-and-release:
@@ -25,7 +26,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GHCR_TOKEN }}
 
       - name: Set image tag
         id: tag
@@ -51,7 +52,8 @@ jobs:
       - name: Stamp image tag into chart values
         env:
           TAG: ${{ steps.tag.outputs.value }}
-        run: sed -i "s|tag:.*|tag: ${TAG}|" helm/values.yaml
+        run: |
+          sed -i "s|tag:.*|tag: ${TAG}|" helm/values.yaml
 
       - name: Lint chart
         run: helm lint helm/
