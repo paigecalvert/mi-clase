@@ -104,7 +104,9 @@ jobs:
         uses: azure/setup-helm@v4
 
       - name: Stamp image tag into chart values
-        run: sed -i 's|tag:.*|tag: "${{ needs.version.outputs.version }}"|' helm/values.yaml
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: sed -i "s|tag:.*|tag: ${VERSION}|" helm/values.yaml
 
       - name: Package chart
         run: |

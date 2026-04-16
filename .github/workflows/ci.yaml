@@ -49,7 +49,9 @@ jobs:
         uses: azure/setup-helm@v4
 
       - name: Stamp image tag into chart values
-        run: sed -i 's|tag:.*|tag: "${{ steps.tag.outputs.value }}"|' helm/values.yaml
+        env:
+          TAG: ${{ steps.tag.outputs.value }}
+        run: sed -i "s|tag:.*|tag: ${TAG}|" helm/values.yaml
 
       - name: Lint chart
         run: helm lint helm/
