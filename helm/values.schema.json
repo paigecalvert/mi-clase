@@ -209,6 +209,9 @@
     "traefik": {
       "type": "object"
     },
+    "global": {
+      "type": "object"
+    },
     "replicated": {
       "type": "object"
     },

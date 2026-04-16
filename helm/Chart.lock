@@ -18,4 +18,4 @@ dependencies:
   repository: oci://registry.replicated.com/library
   version: 1.19.2
 digest: sha256:d84dd7d127804ea76fa9ca9605b25502d86d778bde850f22fcd987d521d24a47
-generated: "2026-04-16T15:56:40.221353-06:00"
+generated: "2026-04-16T16:22:30.942558-06:00"

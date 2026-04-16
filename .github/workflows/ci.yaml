@@ -53,7 +53,7 @@ jobs:
         env:
           TAG: ${{ steps.tag.outputs.value }}
         run: |
-          sed -i "s|tag:.*|tag: ${TAG}|" helm/values.yaml
+          yq -i ".image.tag = \"${TAG}\"" helm/values.yaml
 
       - name: Lint chart
         run: helm lint helm/

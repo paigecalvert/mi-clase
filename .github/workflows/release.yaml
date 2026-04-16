@@ -108,7 +108,7 @@ jobs:
         env:
           VERSION: ${{ needs.version.outputs.version }}
         run: |
-          sed -i "s|tag:.*|tag: ${VERSION}|" helm/values.yaml
+          yq -i ".image.tag = \"${VERSION}\"" helm/values.yaml
 
       - name: Package chart
         run: |
