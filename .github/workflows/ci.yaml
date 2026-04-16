@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+env:
+  IMAGE: ghcr.io/paigecalvert/mi-clase
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set image tag
+        id: tag
+        run: echo "value=pr-${{ github.event.number }}-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ env.IMAGE }}:${{ steps.tag.outputs.value }}
+
+      - name: Stamp image tag into chart values
+        run: sed -i 's|tag:.*|tag: "${{ steps.tag.outputs.value }}"|' helm/values.yaml
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Download chart dependencies
+        run: helm dependency build helm/
+
+      - name: Package chart
+        run: |
+          mkdir -p manifests
+          helm package helm/ -d manifests/
+
+      - name: Install Replicated CLI
+        uses: replicatedhq/setup-replicated@v1
+        with:
+          api-token: ${{ secrets.REPLICATED_API_TOKEN }}
+
+      - name: Lint chart
+        run: helm lint helm/
+
+      - name: Create Replicated release
+        run: replicated release create --yaml-dir manifests --app mi-clase
