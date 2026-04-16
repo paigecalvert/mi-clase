@@ -8,7 +8,7 @@ const { getLicenseField } = require('../replicated');
 router.use(async (req, res, next) => {
   try {
     const field = await getLicenseField('quiz_feature');
-    if (field.value !== 'true') {
+    if (field.value !== true) {
       return res.status(403).json({ error: 'quiz_feature_disabled' });
     }
   } catch {
