@@ -1,7 +1,7 @@
 dependencies:
 - name: postgresql
   repository: https://charts.bitnami.com/bitnami
-  version: 18.5.21
+  version: 18.5.22
 - name: redis
   repository: https://charts.bitnami.com/bitnami
   version: 25.3.11
@@ -14,5 +14,8 @@ dependencies:
 - name: traefik
   repository: https://helm.traefik.io/traefik
   version: 39.0.7
-digest: sha256:2f1d3cb82b8a69d9630c381b0def86232b7c59617c60be62c6132931b5528494
-generated: "2026-04-16T11:42:40.374246-06:00"
+- name: replicated
+  repository: oci://registry.replicated.com/library
+  version: 1.19.2
+digest: sha256:d84dd7d127804ea76fa9ca9605b25502d86d778bde850f22fcd987d521d24a47
+generated: "2026-04-16T16:22:30.942558-06:00"

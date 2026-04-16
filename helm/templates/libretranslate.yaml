@@ -18,6 +18,8 @@ spec:
         app.kubernetes.io/name: {{ include "mi-clase.name" . }}-libretranslate
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
+      imagePullSecrets:
+        - name: enterprise-pull-secret
       containers:
         - name: libretranslate
           image: "{{ .Values.libretranslate.image.repository }}:{{ .Values.libretranslate.image.tag }}"

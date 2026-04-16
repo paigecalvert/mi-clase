@@ -1,5 +1,9 @@
+global:
+  security:
+    allowInsecureImages: true
+
 image:
-  repository: ghcr.io/paigecalvert/mi-clase
+  repository: proxy.miclase.site/proxy/mi-clase/ghcr.io/paigecalvert/mi-clase
   tag: "latest"
   pullPolicy: IfNotPresent
 
@@ -75,6 +79,11 @@ postgresql:
     database: mi_clase
     username: mi_clase
     password: mi_clase
+  image:
+    registry: proxy.miclase.site
+    repository: proxy/mi-clase/docker.io/bitnami/postgresql
+    pullSecrets:
+      - enterprise-pull-secret
 
 externalPostgresql:
   host: ""
@@ -89,6 +98,11 @@ redis:
   architecture: standalone
   auth:
     enabled: false
+  image:
+    registry: proxy.miclase.site
+    repository: proxy/mi-clase/docker.io/bitnami/redis
+    pullSecrets:
+      - enterprise-pull-secret
 
 externalRedis:
   host: ""
@@ -111,6 +125,10 @@ minio:
     limits:
       memory: "1Gi"
       cpu: "500m"
+  image:
+    repository: proxy.miclase.site/proxy/mi-clase/quay.io/minio/minio
+  imagePullSecrets:
+    - name: enterprise-pull-secret
 
 externalMinio:
   host: ""
@@ -126,7 +144,7 @@ fileStorage:
 libretranslate:
   enabled: true
   image:
-    repository: libretranslate/libretranslate
+    repository: proxy.miclase.site/proxy/mi-clase/docker.io/libretranslate/libretranslate
     tag: latest
     pullPolicy: IfNotPresent
   # URL to use when libretranslate.enabled is false (e.g. hosted instance)

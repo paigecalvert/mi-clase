@@ -209,6 +209,12 @@
     "traefik": {
       "type": "object"
     },
+    "global": {
+      "type": "object"
+    },
+    "replicated": {
+      "type": "object"
+    },
     "libretranslate": {
       "type": "object",
       "additionalProperties": false,
