@@ -35,7 +35,10 @@ export default function App() {
   return (
     <>
       <header style={styles.header}>
-        <span style={styles.title}>🌿 Mi Clase</span>
+        <span style={styles.title}>
+          <img src="/logo.svg" alt="" style={{ width: 28, height: 28, marginRight: 8, verticalAlign: 'middle', filter: 'brightness(0) invert(1)' }} />
+          Mi Clase
+        </span>
         <nav style={styles.nav}>
           {[
             { to: '/classes', label: 'My Classes' },

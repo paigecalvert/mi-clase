@@ -1,0 +1,142 @@
+image:
+  repository: ghcr.io/paigecalvert/mi-clase
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "256Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+
+service:
+  type: ClusterIP
+  port: 3000
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: miclase.site
+      paths:
+        - path: /
+          pathType: Prefix
+
+# ── TLS ──────────────────────────────────────────────────────────────────────
+# mode: ""          — TLS disabled
+# mode: "auto"      — cert-manager provisions a Let's Encrypt certificate automatically
+# mode: "manual"    — bring your own TLS secret (secretName must exist in the namespace)
+# mode: "selfsigned"— cert-manager generates a self-signed certificate (good for internal/dev)
+tls:
+  mode: ""
+  # Secret name used for all modes:
+  #   auto/selfsigned: cert-manager creates it; manual: it must already exist
+  secretName: "mi-clase-tls"
+  certManager:
+    issuerKind: "ClusterIssuer"   # ClusterIssuer or Issuer
+    issuerName: "letsencrypt-prod"
+    # Email for Let's Encrypt ACME registration (required for auto mode)
+    email: ""
+
+# ── cert-manager ─────────────────────────────────────────────────────────────
+# Set install: true to deploy cert-manager as part of this chart.
+# Set install: false if cert-manager is already installed in the cluster.
+certManager:
+  install: false
+
+# Subchart values passed through to cert-manager (must use hyphenated chart name as key)
+cert-manager:
+  crds:
+    enabled: true
+
+# ── Ingress controller ────────────────────────────────────────────────────────
+# Set enabled: true to deploy Traefik as the ingress controller.
+# Set enabled: false if an ingress controller is already present in the cluster.
+ingressController:
+  enabled: false
+
+# Fixed NodePorts for Traefik so URLs are stable across reinstalls
+traefik:
+  ports:
+    web:
+      nodePort: 30080
+    websecure:
+      nodePort: 30443
+
+# ── PostgreSQL ──────────────────────────────────────────────────────────────
+postgresql:
+  enabled: true
+  auth:
+    database: mi_clase
+    username: mi_clase
+    password: mi_clase
+
+externalPostgresql:
+  host: ""
+  port: 5432
+  database: mi_clase
+  username: mi_clase
+  password: ""
+
+# ── Redis ───────────────────────────────────────────────────────────────────
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: false
+
+externalRedis:
+  host: ""
+  port: 6379
+  password: ""
+
+# ── MinIO ───────────────────────────────────────────────────────────────────
+minio:
+  enabled: true
+  mode: standalone
+  replicas: 1
+  drivesPerNode: 1
+  pools: 1
+  rootUser: mi_clase
+  rootPassword: mi_clase_secret
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+
+externalMinio:
+  host: ""
+  port: 9000
+  accessKey: ""
+  secretKey: ""
+  useSSL: false
+
+fileStorage:
+  bucket: mi-clase
+
+# ── LibreTranslate ──────────────────────────────────────────────────────────
+libretranslate:
+  enabled: true
+  image:
+    repository: libretranslate/libretranslate
+    tag: latest
+    pullPolicy: IfNotPresent
+  # URL to use when libretranslate.enabled is false (e.g. hosted instance)
+  externalUrl: ""
+  # API key — only needed for hosted libretranslate.com
+  apiKey: ""
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"

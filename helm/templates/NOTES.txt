@@ -1,0 +1,94 @@
+Mi Clase has been installed!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ QUICK ACCESS — port-forward (no ingress required)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "mi-clase.fullname" . }} 8080:3000
+
+Then open: http://localhost:8080
+
+Health check:
+  curl http://localhost:8080/health
+
+{{- if .Values.ingress.enabled }}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ INGRESS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Ingress class: {{ .Values.ingress.className }}
+
+  Configured hosts:
+  {{- range .Values.ingress.hosts }}
+  {{- if $.Values.tls.mode }}
+    https://{{ .host }}
+  {{- else }}
+    http://{{ .host }}
+  {{- end }}
+  {{- end }}
+
+{{- if .Values.ingressController.enabled }}
+  The app is accessible at {{ if .Values.tls.mode }}https{{ else }}http{{ end }}://<external-ip>. Get the external IP with:
+
+    kubectl get svc -n {{ .Release.Namespace }} {{ .Release.Name }}-traefik \
+      -o jsonpath='{.status.loadBalancer.ingress[0].ip}{"\n"}'
+
+{{- end }}
+{{- end }}
+
+{{- if eq .Values.tls.mode "auto" }}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ TLS — cert-manager (Let's Encrypt)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  After DNS is pointed at the load balancer IP, create the ClusterIssuer:
+
+    kubectl wait --for=condition=Available -n cert-manager deployment --all --timeout=120s
+
+    kubectl apply -f - <<EOF
+    apiVersion: cert-manager.io/v1
+    kind: ClusterIssuer
+    metadata:
+      name: {{ .Values.tls.certManager.issuerName }}
+    spec:
+      acme:
+        server: https://acme-v02.api.letsencrypt.org/directory
+        email: {{ .Values.tls.certManager.email }}
+        privateKeySecretRef:
+          name: {{ .Values.tls.certManager.issuerName }}
+        solvers:
+          - http01:
+              ingress:
+                ingressClassName: {{ .Values.ingress.className }}
+    EOF
+
+  Watch cert-manager provision the certificate:
+
+    kubectl get certificate -n {{ .Release.Namespace }} -w
+
+{{- else if eq .Values.tls.mode "manual" }}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ TLS — manual certificate
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Create the TLS secret before the ingress can serve HTTPS:
+
+    kubectl create secret tls {{ .Values.tls.secretName }} \
+      --cert=tls.crt \
+      --key=tls.key \
+      -n {{ .Release.Namespace }}
+
+{{- else if eq .Values.tls.mode "selfsigned" }}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ TLS — self-signed certificate
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  cert-manager is generating a self-signed certificate. Watch its status:
+
+    kubectl get certificate -n {{ .Release.Namespace }} -w
+
+{{- end }}

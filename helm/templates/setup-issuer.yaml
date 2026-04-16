@@ -1,0 +1,102 @@
+{{- if and (eq .Values.tls.mode "auto") .Values.certManager.install }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "mi-clase.fullname" . }}-issuer-setup
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "mi-clase.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "mi-clase.fullname" . }}-issuer-setup
+  labels:
+    {{- include "mi-clase.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["cert-manager.io"]
+    resources: ["clusterissuers"]
+    verbs: ["get", "create", "update", "patch"]
+  - apiGroups: ["apiextensions.k8s.io"]
+    resources: ["customresourcedefinitions"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "mi-clase.fullname" . }}-issuer-setup
+  labels:
+    {{- include "mi-clase.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "mi-clase.fullname" . }}-issuer-setup
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "mi-clase.fullname" . }}-issuer-setup
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "mi-clase.fullname" . }}-issuer-setup
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "mi-clase.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "10"
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      serviceAccountName: {{ include "mi-clase.fullname" . }}-issuer-setup
+      restartPolicy: OnFailure
+      containers:
+        - name: create-issuer
+          image: bitnami/kubectl:latest
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+
+              echo "Waiting for cert-manager CRDs to be registered..."
+              until kubectl get crd clusterissuers.cert-manager.io >/dev/null 2>&1; do
+                echo "  CRDs not ready yet, retrying..."; sleep 5
+              done
+
+              echo "Creating ClusterIssuer {{ .Values.tls.certManager.issuerName }}..."
+              cat <<EOF | kubectl apply -f -
+              apiVersion: cert-manager.io/v1
+              kind: ClusterIssuer
+              metadata:
+                name: {{ .Values.tls.certManager.issuerName }}
+              spec:
+                acme:
+                  server: https://acme-v02.api.letsencrypt.org/directory
+                  email: {{ .Values.tls.certManager.email | quote }}
+                  privateKeySecretRef:
+                    name: {{ .Values.tls.certManager.issuerName }}
+                  solvers:
+                    - http01:
+                        ingress:
+                          ingressClassName: {{ .Values.ingress.className }}
+              EOF
+
+              echo "ClusterIssuer created successfully."
+{{- end }}
