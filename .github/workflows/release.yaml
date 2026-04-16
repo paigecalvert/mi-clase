@@ -4,18 +4,72 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: write
+  packages: write
+
+concurrency:
+  group: release-main
+  cancel-in-progress: false
+
 env:
   IMAGE: ghcr.io/paigecalvert/mi-clase
 
 jobs:
-  build-and-release:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
+  version:
+    runs-on: ubuntu-22.04
+    outputs:
+      version: ${{ steps.next.outputs.version }}
+      tag: ${{ steps.next.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute next patch version
+        id: next
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --tags --force
+
+          latest="$(git tag -l 'v*.*.*' --sort=-v:refname | head -n 1 || true)"
+          if [[ -z "${latest}" ]]; then
+            next="0.1.0"
+          else
+            ver="${latest#v}"
+            IFS='.' read -r major minor patch <<< "${ver}"
+            patch=$((patch + 1))
+            next="${major}.${minor}.${patch}"
+          fi
+
+          echo "version=${next}" >> "$GITHUB_OUTPUT"
+          echo "tag=v${next}" >> "$GITHUB_OUTPUT"
+          echo "Next tag: v${next} (latest was: ${latest:-<none>})"
+
+      - name: Create and push tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${{ steps.next.outputs.tag }}"
+
+          git fetch --tags --force
+          if git rev-parse -q --verify "refs/tags/${tag}" >/dev/null; then
+            echo "Tag ${tag} already exists. Skipping."
+            exit 0
+          fi
+
+          git tag "${tag}"
+          git push origin "${tag}"
+
+  build:
+    runs-on: ubuntu-22.04
+    needs: [version]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -24,9 +78,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set image tag
-        id: tag
-        run: echo "value=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+      - uses: int128/docker-build-cache-config-action@v1
+        id: cache
+        with:
+          image: ghcr.io/paigecalvert/mi-clase/cache
 
       - name: Build and push image
         uses: docker/build-push-action@v5
@@ -34,27 +89,36 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ env.IMAGE }}:${{ steps.tag.outputs.value }}
+            ${{ env.IMAGE }}:${{ needs.version.outputs.version }}
             ${{ env.IMAGE }}:latest
+          cache-from: ${{ steps.cache.outputs.cache-from }}
+          cache-to: ${{ steps.cache.outputs.cache-to }}
 
-      - name: Stamp image tag into chart values
-        run: sed -i 's|tag:.*|tag: "${{ steps.tag.outputs.value }}"|' helm/values.yaml
+  release:
+    runs-on: ubuntu-22.04
+    needs: [version, build]
+    steps:
+      - uses: actions/checkout@v4
 
       - name: Install Helm
         uses: azure/setup-helm@v4
 
-      - name: Download chart dependencies
-        run: helm dependency build helm/
+      - name: Stamp image tag into chart values
+        run: sed -i 's|tag:.*|tag: "${{ needs.version.outputs.version }}"|' helm/values.yaml
 
       - name: Package chart
         run: |
-          mkdir -p manifests
-          helm package helm/ -d manifests/
-
-      - name: Install Replicated CLI
-        uses: replicatedhq/setup-replicated@v1
-        with:
-          api-token: ${{ secrets.REPLICATED_API_TOKEN }}
+          rm -f manifests/mi-clase-*.tgz
+          helm package helm/ \
+            --version=${{ needs.version.outputs.version }} \
+            --app-version=${{ needs.version.outputs.version }} \
+            -d manifests/
 
       - name: Create release and promote to Unstable
-        run: replicated release create --yaml-dir manifests --app mi-clase --promote Unstable
+        uses: replicatedhq/replicated-actions/create-release@v1
+        with:
+          app-slug: mi-clase
+          api-token: ${{ secrets.REPLICATED_API_TOKEN }}
+          yaml-dir: manifests
+          promote-channel: Unstable
+          version: ${{ needs.version.outputs.version }}

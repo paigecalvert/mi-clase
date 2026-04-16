@@ -4,18 +4,21 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+  packages: write
+
 env:
   IMAGE: ghcr.io/paigecalvert/mi-clase
 
 jobs:
   build-and-release:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -28,34 +31,37 @@ jobs:
         id: tag
         run: echo "value=pr-${{ github.event.number }}-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
+      - uses: int128/docker-build-cache-config-action@v1
+        id: cache
+        with:
+          image: ghcr.io/paigecalvert/mi-clase/cache
+
       - name: Build and push image
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
           tags: ${{ env.IMAGE }}:${{ steps.tag.outputs.value }}
-
-      - name: Stamp image tag into chart values
-        run: sed -i 's|tag:.*|tag: "${{ steps.tag.outputs.value }}"|' helm/values.yaml
+          cache-from: ${{ steps.cache.outputs.cache-from }}
+          cache-to: ${{ steps.cache.outputs.cache-to }}
 
       - name: Install Helm
         uses: azure/setup-helm@v4
 
-      - name: Download chart dependencies
-        run: helm dependency build helm/
-
-      - name: Package chart
-        run: |
-          mkdir -p manifests
-          helm package helm/ -d manifests/
-
-      - name: Install Replicated CLI
-        uses: replicatedhq/setup-replicated@v1
-        with:
-          api-token: ${{ secrets.REPLICATED_API_TOKEN }}
+      - name: Stamp image tag into chart values
+        run: sed -i 's|tag:.*|tag: "${{ steps.tag.outputs.value }}"|' helm/values.yaml
 
       - name: Lint chart
         run: helm lint helm/
 
+      - name: Package chart
+        run: |
+          rm -f manifests/mi-clase-*.tgz
+          helm package helm/ -d manifests/
+
       - name: Create Replicated release
-        run: replicated release create --yaml-dir manifests --app mi-clase
+        uses: replicatedhq/replicated-actions/create-release@v1
+        with:
+          app-slug: mi-clase
+          api-token: ${{ secrets.REPLICATED_API_TOKEN }}
+          yaml-dir: manifests
