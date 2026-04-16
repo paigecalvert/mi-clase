@@ -106,7 +106,8 @@ jobs:
       - name: Stamp image tag into chart values
         env:
           VERSION: ${{ needs.version.outputs.version }}
-        run: sed -i "s|tag:.*|tag: ${VERSION}|" helm/values.yaml
+        run: |
+          sed -i "s|tag:.*|tag: ${VERSION}|" helm/values.yaml
 
       - name: Package chart
         run: |
