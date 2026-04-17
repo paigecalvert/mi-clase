@@ -124,8 +124,8 @@ jobs:
         uses: replicatedhq/replicated-actions/create-cluster@v1
         with:
           api-token: ${{ secrets.REPLICATED_TEST_API_TOKEN }}
-          kubernetes-distribution: k3s
-          kubernetes-version: "1.29"
+          kubernetes-distribution: kind
+          kubernetes-version: "1.31.14"
           nodes: 1
           ttl: 2h
           timeout-minutes: 20
