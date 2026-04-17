@@ -1,0 +1,106 @@
+apiVersion: troubleshoot.sh/v1beta3
+kind: Preflight
+metadata:
+  name: mi-clase-preflight
+spec:
+  collectors:
+    - clusterResources: {}
+
+  analyzers:
+    - clusterVersion:
+        checkName: Kubernetes Version
+        outcomes:
+          - fail:
+              when: "< 1.25.0"
+              message: |
+                Mi Clase requires Kubernetes 1.25.0 or later. Your cluster is running an older
+                version that is no longer supported. Please upgrade your cluster before installing.
+          - pass:
+              message: "Kubernetes version meets the minimum requirement of 1.25.0."
+
+    - distribution:
+        checkName: Kubernetes Distribution
+        outcomes:
+          - fail:
+              when: "== docker-desktop"
+              message: |
+                Docker Desktop is not a supported deployment target for Mi Clase.
+                Please use a supported distribution such as EKS, GKE, AKS, or k3s.
+                See the documentation for a full list of supported distributions.
+          - fail:
+              when: "== microk8s"
+              message: |
+                MicroK8s is not a supported deployment target for Mi Clase.
+                Please use a supported distribution such as EKS, GKE, AKS, or k3s.
+                See the documentation for a full list of supported distributions.
+          - pass:
+              message: "Kubernetes distribution is supported."
+
+    - nodeResources:
+        checkName: Schedulable Nodes
+        outcomes:
+          - fail:
+              when: "count() < 1"
+              message: |
+                No schedulable nodes were found in the cluster. All pods will be unschedulable.
+                Check for node taints, cordoned nodes, or cluster provisioning issues.
+          - pass:
+              when: "count() >= 1"
+              message: "At least one node is available for scheduling."
+
+    - nodeResources:
+        checkName: Cluster CPU
+        outcomes:
+          - fail:
+              when: "sum(cpuCapacity) < 2"
+              message: |
+                The cluster has fewer than 2 CPU cores available. Mi Clase and its embedded
+                dependencies (PostgreSQL, Redis, MinIO) require at least 2 cores to schedule
+                all workloads. Add more nodes or use a larger instance type.
+          - warn:
+              when: "sum(cpuCapacity) < 4"
+              message: |
+                The cluster has fewer than 4 CPU cores. Mi Clase runs best with at least 4 cores
+                when using all embedded services. Performance may be degraded under load.
+          - pass:
+              message: "Cluster CPU meets the recommended requirement."
+
+    - nodeResources:
+        checkName: Node Memory
+        outcomes:
+          - fail:
+              when: "min(memoryCapacity) < 2Gi"
+              message: |
+                At least one node has less than 2Gi of memory. Mi Clase and its embedded
+                dependencies require at least 2Gi per node to schedule successfully.
+                Add more memory or use a larger instance type.
+          - warn:
+              when: "min(memoryCapacity) < 4Gi"
+              message: |
+                At least one node has less than 4Gi of memory. Mi Clase runs best with 4Gi
+                or more per node when using embedded services. Consider a larger instance type.
+          - pass:
+              message: "Node memory meets the recommended requirement of 4Gi."
+
+    - storageClass:
+        checkName: Default Storage Class
+        outcomes:
+          - fail:
+              message: |
+                No default StorageClass was found in the cluster. Mi Clase's embedded
+                PostgreSQL, Redis, and MinIO require a default StorageClass to provision
+                PersistentVolumes. Install a StorageClass and mark it as default before installing.
+          - pass:
+              message: "Default StorageClass is available."
+
+    - ingressClass:
+        checkName: Ingress Class
+        ingressClassName: traefik
+        outcomes:
+          - fail:
+              message: |
+                IngressClass 'traefik' was not found in the cluster. The embedded cluster
+                installs Traefik automatically — if this check fails, the Traefik extension
+                may not have deployed correctly.
+          - pass:
+              message: "IngressClass 'traefik' is available."
