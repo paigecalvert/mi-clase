@@ -14,6 +14,7 @@ spec:
       labels:
         {{- include "mi-clase.selectorLabels" . | nindent 8 }}
     spec:
+      serviceAccountName: {{ include "mi-clase.fullname" . }}
       imagePullSecrets:
         - name: enterprise-pull-secret
       initContainers:

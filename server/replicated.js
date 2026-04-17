@@ -26,9 +26,23 @@ async function sdkPatch(path, body) {
   return res.json();
 }
 
+async function uploadSupportBundle(buffer) {
+  const res = await fetch(`${SDK_URL}/supportbundle`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/gzip',
+      'Content-Length': buffer.length.toString(),
+    },
+    body: buffer,
+  });
+  if (!res.ok) throw new Error(`SDK /supportbundle returned ${res.status}`);
+  return res.json();
+}
+
 module.exports = {
-  getLicenseField: (name) => sdkGet(`/license/fields/${name}`),
-  getLicenseInfo:  ()     => sdkGet('/license/info'),
-  getUpdates:      ()     => sdkGet('/app/updates'),
-  sendMetrics:     (data) => sdkPatch('/app/custom-metrics', { data }),
+  getLicenseField:     (name)   => sdkGet(`/license/fields/${name}`),
+  getLicenseInfo:      ()       => sdkGet('/license/info'),
+  getUpdates:          ()       => sdkGet('/app/updates'),
+  sendMetrics:         (data)   => sdkPatch('/app/custom-metrics', { data }),
+  uploadSupportBundle: (buffer) => uploadSupportBundle(buffer),
 };
