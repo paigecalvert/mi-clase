@@ -13,11 +13,14 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  release:
+  pr-test:
     runs-on: ubuntu-22.04
-    outputs:
-      release-sequence: ${{ steps.create-release.outputs.release-sequence }}
-      chart-version: ${{ steps.chart-version.outputs.value }}
+    env:
+      CHANNEL_NAME: ci-${{ github.run_id }}
+      CUSTOMER_NAME: ci-test-${{ github.run_id }}
+      CUSTOMER_EMAIL: ci-test-${{ github.run_id }}@ci.mi-clase.example
+      REPLICATED_API_TOKEN: ${{ secrets.REPLICATED_TEST_API_TOKEN }}
+      REPLICATED_APP: mi-clase
     steps:
       - uses: actions/checkout@v4
 
@@ -78,19 +81,13 @@ jobs:
           api-token: ${{ secrets.REPLICATED_TEST_API_TOKEN }}
           yaml-dir: manifests
 
-  pr-test:
-    runs-on: ubuntu-22.04
-    needs: [release]
-    env:
-      CHANNEL_NAME: ci-${{ github.run_id }}
-      CUSTOMER_NAME: ci-test-${{ github.run_id }}
-      CUSTOMER_EMAIL: ci-test-${{ github.run_id }}@ci.mi-clase.example
-    steps:
       - name: Install Replicated CLI
-        uses: replicatedhq/setup-replicated@v1
-        with:
-          api-token: ${{ secrets.REPLICATED_TEST_API_TOKEN }}
-          app-slug: mi-clase
+        run: |
+          set -euo pipefail
+          download_url=$(curl -s https://api.github.com/repos/replicatedhq/replicated/releases/latest \
+            | jq -r '.assets[] | select(.name | test("linux_amd64.tar.gz$")) | .browser_download_url')
+          curl -sL "$download_url" | tar xz -C /tmp replicated
+          sudo mv /tmp/replicated /usr/local/bin/replicated
 
       - name: Create temp channel
         id: create-channel
@@ -103,70 +100,50 @@ jobs:
           echo "channel-slug=$(echo "$channel_json" | jq -r '.[0].channelSlug')" >> "$GITHUB_OUTPUT"
 
       - name: Promote release to temp channel
-        run: |
-          set -euo pipefail
-          replicated release promote \
-            "${{ needs.release.outputs.release-sequence }}" \
-            "${{ steps.create-channel.outputs.channel-id }}"
+        uses: replicatedhq/replicated-actions/promote-release@v1
+        with:
+          api-token: ${{ secrets.REPLICATED_TEST_API_TOKEN }}
+          app-slug: mi-clase
+          channel-to: ${{ steps.create-channel.outputs.channel-slug }}
+          release-sequence: ${{ steps.create-release.outputs.release-sequence }}
+          release-version: ${{ steps.chart-version.outputs.value }}
 
       - name: Create temp customer
         id: create-customer
-        run: |
-          set -euo pipefail
-          replicated customer create \
-            --name "$CUSTOMER_NAME" \
-            --email "$CUSTOMER_EMAIL" \
-            --channel "$CHANNEL_NAME" \
-            --helm-install
-
-          inspect=$(replicated customer inspect \
-            --customer "$CUSTOMER_NAME" \
-            --output json)
-          customer_id=$(echo "$inspect" | jq -r '.id')
-          registry_pass=$(echo "$inspect" | jq -r '.installationId')
-
-          echo "::add-mask::${registry_pass}"
-          echo "customer-id=${customer_id}" >> "$GITHUB_OUTPUT"
-          echo "registry-pass=${registry_pass}" >> "$GITHUB_OUTPUT"
+        uses: replicatedhq/replicated-actions/create-customer@v1
+        with:
+          api-token: ${{ secrets.REPLICATED_TEST_API_TOKEN }}
+          app-slug: mi-clase
+          customer-name: ${{ env.CUSTOMER_NAME }}
+          customer-email: ${{ env.CUSTOMER_EMAIL }}
+          channel-slug: ${{ steps.create-channel.outputs.channel-slug }}
 
       - name: Create CMX cluster
         id: create-cluster
-        run: |
-          set -euo pipefail
-          cluster_id=$(replicated cluster create \
-            --distribution k3s \
-            --version 1.29 \
-            --nodes 1 \
-            --ttl 2h \
-            --wait 10m \
-            --output json | jq -r '.id')
-          echo "cluster-id=${cluster_id}" >> "$GITHUB_OUTPUT"
-
-      - name: Get kubeconfig
-        run: |
-          set -euo pipefail
-          replicated cluster kubeconfig \
-            "${{ steps.create-cluster.outputs.cluster-id }}" \
-            --stdout > kubeconfig.yaml
-          echo "KUBECONFIG=$(pwd)/kubeconfig.yaml" >> "$GITHUB_ENV"
-
-      - name: Install Helm
-        uses: azure/setup-helm@v4
+        uses: replicatedhq/replicated-actions/create-cluster@v1
+        with:
+          api-token: ${{ secrets.REPLICATED_TEST_API_TOKEN }}
+          kubernetes-distribution: k3s
+          kubernetes-version: "1.29"
+          nodes: 1
+          ttl: 2h
+          timeout-minutes: 20
+          kubeconfig-path: ${{ github.workspace }}/kubeconfig.yaml
+          export-kubeconfig: "true"
 
       - name: Install chart
-        run: |
-          set -euo pipefail
-          helm registry login registry.miclase.site \
-            --username "$CUSTOMER_EMAIL" \
-            --password "${{ steps.create-customer.outputs.registry-pass }}"
-
-          helm install mi-clase \
-            oci://registry.miclase.site/mi-clase/${{ steps.create-channel.outputs.channel-slug }}/mi-clase \
-            --version "${{ needs.release.outputs.chart-version }}" \
-            --namespace mi-clase \
-            --create-namespace \
-            --timeout 10m \
-            --wait
+        uses: replicatedhq/replicated-actions/helm-install@v1
+        with:
+          helm-path: helm
+          kubeconfig: ${{ steps.create-cluster.outputs.cluster-kubeconfig }}
+          chart: oci://registry.miclase.site/mi-clase/${{ steps.create-channel.outputs.channel-slug }}/mi-clase
+          name: mi-clase
+          namespace: mi-clase
+          version: ${{ steps.chart-version.outputs.value }}
+          registry-username: ${{ env.CUSTOMER_EMAIL }}
+          registry-password: ${{ steps.create-customer.outputs.license-id }}
+          wait: "true"
+          extra-helm-flags: "--timeout 10m0s"
 
       - name: Health check
         run: |
@@ -174,12 +151,25 @@ jobs:
             --namespace mi-clase --timeout=120s
           kubectl get pods --namespace mi-clase
 
-      - name: Cleanup
+      - name: Remove cluster
         if: always()
-        run: |
-          replicated cluster rm \
-            "${{ steps.create-cluster.outputs.cluster-id }}" || true
-          replicated customer archive \
-            "${{ steps.create-customer.outputs.customer-id }}" || true
-          replicated channel rm \
-            "${{ steps.create-channel.outputs.channel-id }}" || true
+        uses: replicatedhq/replicated-actions/remove-cluster@v1
+        with:
+          api-token: ${{ secrets.REPLICATED_TEST_API_TOKEN }}
+          cluster-id: ${{ steps.create-cluster.outputs.cluster-id }}
+
+      - name: Archive customer
+        if: always()
+        uses: replicatedhq/replicated-actions/archive-customer@v1
+        with:
+          api-token: ${{ secrets.REPLICATED_TEST_API_TOKEN }}
+          customer-id: ${{ steps.create-customer.outputs.customer-id }}
+          app-slug: mi-clase
+
+      - name: Archive channel
+        if: always()
+        uses: replicatedhq/replicated-actions/archive-channel@v1
+        with:
+          api-token: ${{ secrets.REPLICATED_TEST_API_TOKEN }}
+          app-slug: mi-clase
+          channel-slug: ${{ steps.create-channel.outputs.channel-slug }}
