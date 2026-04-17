@@ -125,7 +125,7 @@ jobs:
         uses: replicatedhq/replicated-actions/create-release@v1
         with:
           app-slug: mi-clase
-          api-token: ${{ secrets.REPLICATED_API_TOKEN }}
+          api-token: ${{ secrets.REPLICATED_TEST_API_TOKEN }}
           yaml-dir: manifests
           promote-channel: Unstable
           version: ${{ needs.version.outputs.version }}

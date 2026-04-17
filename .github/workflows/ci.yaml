@@ -15,6 +15,9 @@ env:
 jobs:
   build-and-release:
     runs-on: ubuntu-22.04
+    outputs:
+      release-sequence: ${{ steps.create-release.outputs.release-sequence }}
+      chart-version: ${{ steps.chart-version.outputs.value }}
     steps:
       - uses: actions/checkout@v4
 
@@ -63,9 +66,120 @@ jobs:
           rm -f manifests/mi-clase-*.tgz
           helm package helm/ -d manifests/
 
+      - name: Get chart version
+        id: chart-version
+        run: echo "value=$(yq '.version' helm/Chart.yaml)" >> "$GITHUB_OUTPUT"
+
       - name: Create Replicated release
+        id: create-release
         uses: replicatedhq/replicated-actions/create-release@v1
         with:
           app-slug: mi-clase
-          api-token: ${{ secrets.REPLICATED_API_TOKEN }}
+          api-token: ${{ secrets.REPLICATED_TEST_API_TOKEN }}
           yaml-dir: manifests
+
+  test:
+    runs-on: ubuntu-22.04
+    needs: [build-and-release]
+    env:
+      CHANNEL_NAME: ci-${{ github.run_id }}
+      CUSTOMER_NAME: ci-test-${{ github.run_id }}
+      CUSTOMER_EMAIL: ci-test-${{ github.run_id }}@ci.mi-clase.example
+    steps:
+      - name: Install Replicated CLI
+        uses: replicatedhq/setup-replicated@v1
+        with:
+          api-token: ${{ secrets.REPLICATED_TEST_API_TOKEN }}
+          app-slug: mi-clase
+
+      - name: Create temp channel
+        id: create-channel
+        run: |
+          set -euo pipefail
+          channel_json=$(replicated channel create \
+            --name "$CHANNEL_NAME" \
+            --output json)
+          echo "channel-id=$(echo "$channel_json" | jq -r '.[0].id')" >> "$GITHUB_OUTPUT"
+          echo "channel-slug=$(echo "$channel_json" | jq -r '.[0].channelSlug')" >> "$GITHUB_OUTPUT"
+
+      - name: Promote release to temp channel
+        run: |
+          set -euo pipefail
+          replicated release promote \
+            "${{ needs.build-and-release.outputs.release-sequence }}" \
+            "${{ steps.create-channel.outputs.channel-id }}"
+
+      - name: Create temp customer
+        id: create-customer
+        run: |
+          set -euo pipefail
+          replicated customer create \
+            --name "$CUSTOMER_NAME" \
+            --email "$CUSTOMER_EMAIL" \
+            --channel "$CHANNEL_NAME" \
+            --helm-install
+
+          inspect=$(replicated customer inspect \
+            --customer "$CUSTOMER_NAME" \
+            --output json)
+          customer_id=$(echo "$inspect" | jq -r '.id')
+          registry_pass=$(echo "$inspect" | jq -r '.installationId')
+
+          echo "::add-mask::${registry_pass}"
+          echo "customer-id=${customer_id}" >> "$GITHUB_OUTPUT"
+          echo "registry-pass=${registry_pass}" >> "$GITHUB_OUTPUT"
+
+      - name: Create CMX cluster
+        id: create-cluster
+        run: |
+          set -euo pipefail
+          cluster_id=$(replicated cluster create \
+            --distribution k3s \
+            --version 1.29 \
+            --nodes 1 \
+            --ttl 2h \
+            --wait 10m \
+            --output json | jq -r '.id')
+          echo "cluster-id=${cluster_id}" >> "$GITHUB_OUTPUT"
+
+      - name: Get kubeconfig
+        run: |
+          set -euo pipefail
+          replicated cluster kubeconfig \
+            "${{ steps.create-cluster.outputs.cluster-id }}" \
+            --stdout > kubeconfig.yaml
+          echo "KUBECONFIG=$(pwd)/kubeconfig.yaml" >> "$GITHUB_ENV"
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Install chart
+        run: |
+          set -euo pipefail
+          helm registry login registry.miclase.site \
+            --username "$CUSTOMER_EMAIL" \
+            --password "${{ steps.create-customer.outputs.registry-pass }}"
+
+          helm install mi-clase \
+            oci://registry.miclase.site/mi-clase/${{ steps.create-channel.outputs.channel-slug }}/mi-clase \
+            --version "${{ needs.build-and-release.outputs.chart-version }}" \
+            --namespace mi-clase \
+            --create-namespace \
+            --timeout 10m \
+            --wait
+
+      - name: Health check
+        run: |
+          kubectl rollout status deployment/mi-clase \
+            --namespace mi-clase --timeout=120s
+          kubectl get pods --namespace mi-clase
+
+      - name: Cleanup
+        if: always()
+        run: |
+          replicated cluster rm \
+            "${{ steps.create-cluster.outputs.cluster-id }}" || true
+          replicated customer archive \
+            "${{ steps.create-customer.outputs.customer-id }}" || true
+          replicated channel rm \
+            "${{ steps.create-channel.outputs.channel-id }}" || true
