@@ -224,6 +224,7 @@ jobs:
         run: |
           replicated customer update \
             --customer "${{ steps.create-customer.outputs.customer-id }}" \
+            --name "${{ env.CUSTOMER_NAME }}" \
             --channel Unstable
           replicated customer archive "${{ steps.create-customer.outputs.customer-id }}"
 
