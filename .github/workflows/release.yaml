@@ -95,9 +95,11 @@ jobs:
           cache-from: ${{ steps.cache.outputs.cache-from }}
           cache-to: ${{ steps.cache.outputs.cache-to }}
 
-  release:
+  promote-to-unstable:
     runs-on: ubuntu-22.04
     needs: [version, build]
+    outputs:
+      release-sequence: ${{ steps.create-release.outputs.release-sequence }}
     steps:
       - uses: actions/checkout@v4
 
@@ -119,10 +121,114 @@ jobs:
             -d manifests/
 
       - name: Create release and promote to Unstable
+        id: create-release
         uses: replicatedhq/replicated-actions/create-release@v1
         with:
           app-slug: mi-clase
-          api-token: ${{ secrets.REPLICATED_API_TOKEN }}
+          api-token: ${{ secrets.REPLICATED_TEST_API_TOKEN }}
           yaml-dir: manifests
           promote-channel: Unstable
           version: ${{ needs.version.outputs.version }}
+
+  test:
+    runs-on: ubuntu-22.04
+    needs: [version, promote-to-unstable]
+    env:
+      CHANNEL_NAME: ci-${{ github.run_id }}
+      CUSTOMER_NAME: ci-test-${{ github.run_id }}
+      CUSTOMER_EMAIL: ci-test-${{ github.run_id }}@ci.mi-clase.example
+      REPLICATED_API_TOKEN: ${{ secrets.REPLICATED_TEST_API_TOKEN }}
+      REPLICATED_APP: mi-clase
+    steps:
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Install Replicated CLI
+        run: |
+          set -euo pipefail
+          download_url=$(curl -s https://api.github.com/repos/replicatedhq/replicated/releases/latest \
+            | jq -r '.assets[] | select(.name | test("linux_amd64.tar.gz$")) | .browser_download_url')
+          curl -sL "$download_url" | tar xz -C /tmp replicated
+          sudo mv /tmp/replicated /usr/local/bin/replicated
+
+      - name: Create temp channel
+        id: create-channel
+        run: |
+          set -euo pipefail
+          channel_json=$(replicated channel create \
+            --name "$CHANNEL_NAME" \
+            --output json)
+          echo "channel-id=$(echo "$channel_json" | jq -r '.[0].id')" >> "$GITHUB_OUTPUT"
+          echo "channel-slug=$(echo "$channel_json" | jq -r '.[0].channelSlug')" >> "$GITHUB_OUTPUT"
+
+      - name: Promote release to temp channel
+        uses: replicatedhq/replicated-actions/promote-release@v1
+        with:
+          api-token: ${{ secrets.REPLICATED_TEST_API_TOKEN }}
+          app-slug: mi-clase
+          channel-to: ${{ steps.create-channel.outputs.channel-slug }}
+          release-sequence: ${{ needs.promote-to-unstable.outputs.release-sequence }}
+          release-version: ${{ needs.version.outputs.version }}
+
+      - name: Create temp customer
+        id: create-customer
+        uses: replicatedhq/replicated-actions/create-customer@v1
+        with:
+          api-token: ${{ secrets.REPLICATED_TEST_API_TOKEN }}
+          app-slug: mi-clase
+          customer-name: ${{ env.CUSTOMER_NAME }}
+          customer-email: ${{ env.CUSTOMER_EMAIL }}
+          channel-slug: ${{ steps.create-channel.outputs.channel-slug }}
+          is-kots-install-enabled: "false"
+
+      - name: Create CMX cluster
+        id: create-cluster
+        uses: replicatedhq/replicated-actions/create-cluster@v1
+        with:
+          api-token: ${{ secrets.REPLICATED_TEST_API_TOKEN }}
+          kubernetes-distribution: kind
+          kubernetes-version: "1.31.14"
+          nodes: 1
+          ttl: 2h
+          timeout-minutes: 20
+          kubeconfig-path: ${{ github.workspace }}/kubeconfig.yaml
+          export-kubeconfig: "true"
+
+      - name: Install chart
+        uses: replicatedhq/replicated-actions/helm-install@v1
+        with:
+          helm-path: helm
+          kubeconfig: ${{ steps.create-cluster.outputs.cluster-kubeconfig }}
+          chart: oci://registry.miclase.site/mi-clase/${{ steps.create-channel.outputs.channel-slug }}/mi-clase
+          name: mi-clase
+          namespace: mi-clase
+          version: ${{ needs.version.outputs.version }}
+          registry-username: ${{ env.CUSTOMER_EMAIL }}
+          registry-password: ${{ steps.create-customer.outputs.license-id }}
+
+      - name: Health check
+        run: |
+          kubectl rollout status deployment/mi-clase-mi-clase \
+            --namespace mi-clase --timeout=600s
+          kubectl get pods --namespace mi-clase
+
+      - name: Remove cluster
+        if: always() && steps.create-cluster.outcome == 'success'
+        uses: replicatedhq/replicated-actions/remove-cluster@v1
+        with:
+          api-token: ${{ secrets.REPLICATED_TEST_API_TOKEN }}
+          cluster-id: ${{ steps.create-cluster.outputs.cluster-id }}
+
+      - name: Archive customer
+        if: always() && steps.create-customer.outcome == 'success'
+        run: |
+          replicated customer update \
+            --customer "${{ steps.create-customer.outputs.customer-id }}" \
+            --name "${{ env.CUSTOMER_NAME }}" \
+            --channel Unstable \
+            --kots-install=false
+          replicated customer archive "${{ steps.create-customer.outputs.customer-id }}"
+
+      - name: Archive channel
+        if: always() && steps.create-channel.outcome == 'success'
+        run: replicated channel rm "${{ steps.create-channel.outputs.channel-id }}"
