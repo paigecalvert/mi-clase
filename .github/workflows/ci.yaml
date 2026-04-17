@@ -143,13 +143,11 @@ jobs:
           version: ${{ steps.chart-version.outputs.value }}
           registry-username: ${{ env.CUSTOMER_EMAIL }}
           registry-password: ${{ steps.create-customer.outputs.license-id }}
-          wait: "true"
-          extra-helm-flags: "--timeout 10m0s"
 
       - name: Health check
         run: |
-          kubectl rollout status deployment/mi-clase \
-            --namespace mi-clase --timeout=120s
+          kubectl rollout status deployment/mi-clase-mi-clase \
+            --namespace mi-clase --timeout=600s
           kubectl get pods --namespace mi-clase
 
       - name: Remove cluster
