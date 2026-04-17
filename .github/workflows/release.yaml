@@ -225,7 +225,8 @@ jobs:
           replicated customer update \
             --customer "${{ steps.create-customer.outputs.customer-id }}" \
             --name "${{ env.CUSTOMER_NAME }}" \
-            --channel Unstable
+            --channel Unstable \
+            --kots-install=false
           replicated customer archive "${{ steps.create-customer.outputs.customer-id }}"
 
       - name: Archive channel
