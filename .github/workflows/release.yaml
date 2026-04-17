@@ -95,7 +95,7 @@ jobs:
           cache-from: ${{ steps.cache.outputs.cache-from }}
           cache-to: ${{ steps.cache.outputs.cache-to }}
 
-  release:
+  promote-to-unstable:
     runs-on: ubuntu-22.04
     needs: [version, build]
     outputs:
@@ -132,7 +132,7 @@ jobs:
 
   test:
     runs-on: ubuntu-22.04
-    needs: [version, release]
+    needs: [version, promote-to-unstable]
     env:
       CHANNEL_NAME: ci-${{ github.run_id }}
       CUSTOMER_NAME: ci-test-${{ github.run_id }}
@@ -158,7 +158,7 @@ jobs:
         run: |
           set -euo pipefail
           replicated release promote \
-            "${{ needs.release.outputs.release-sequence }}" \
+            "${{ needs.promote-to-unstable.outputs.release-sequence }}" \
             "${{ steps.create-channel.outputs.channel-id }}"
 
       - name: Create temp customer

@@ -13,7 +13,7 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  build-and-release:
+  release:
     runs-on: ubuntu-22.04
     outputs:
       release-sequence: ${{ steps.create-release.outputs.release-sequence }}
@@ -78,9 +78,9 @@ jobs:
           api-token: ${{ secrets.REPLICATED_TEST_API_TOKEN }}
           yaml-dir: manifests
 
-  test:
+  pr-test:
     runs-on: ubuntu-22.04
-    needs: [build-and-release]
+    needs: [release]
     env:
       CHANNEL_NAME: ci-${{ github.run_id }}
       CUSTOMER_NAME: ci-test-${{ github.run_id }}
@@ -106,7 +106,7 @@ jobs:
         run: |
           set -euo pipefail
           replicated release promote \
-            "${{ needs.build-and-release.outputs.release-sequence }}" \
+            "${{ needs.release.outputs.release-sequence }}" \
             "${{ steps.create-channel.outputs.channel-id }}"
 
       - name: Create temp customer
@@ -162,7 +162,7 @@ jobs:
 
           helm install mi-clase \
             oci://registry.miclase.site/mi-clase/${{ steps.create-channel.outputs.channel-slug }}/mi-clase \
-            --version "${{ needs.build-and-release.outputs.chart-version }}" \
+            --version "${{ needs.release.outputs.chart-version }}" \
             --namespace mi-clase \
             --create-namespace \
             --timeout 10m \
