@@ -161,15 +161,8 @@ jobs:
 
       - name: Archive customer
         if: always() && steps.create-customer.outcome == 'success'
-        uses: replicatedhq/replicated-actions/archive-customer@v1
-        with:
-          api-token: ${{ secrets.REPLICATED_TEST_API_TOKEN }}
-          customer-id: ${{ steps.create-customer.outputs.customer-id }}
+        run: replicated customer archive "${{ steps.create-customer.outputs.customer-id }}"
 
       - name: Archive channel
         if: always() && steps.create-channel.outcome == 'success'
-        uses: replicatedhq/replicated-actions/archive-channel@v1
-        with:
-          api-token: ${{ secrets.REPLICATED_TEST_API_TOKEN }}
-          app-slug: mi-clase
-          channel-slug: ${{ steps.create-channel.outputs.channel-slug }}
+        run: replicated channel rm "${{ steps.create-channel.outputs.channel-id }}"
