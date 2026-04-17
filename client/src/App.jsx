@@ -44,12 +44,37 @@ const styles = {
     color: '#fff',
     borderBottom: '3px solid #a7c957',
   },
+  bundleButton: {
+    marginLeft: 'auto',
+    background: 'rgba(255,255,255,0.15)',
+    color: '#fff',
+    border: '1px solid rgba(255,255,255,0.4)',
+    borderRadius: 4,
+    padding: '6px 14px',
+    fontSize: 13,
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+  },
   main: { maxWidth: 900, margin: '0 auto', padding: '24px 16px' },
 };
 
 export default function App() {
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [licenseState, setLicenseState] = useState(null); // null | 'expired' | 'expiring-soon'
+  const [bundleState, setBundleState] = useState('idle'); // idle | loading | success | error
+
+  const generateBundle = async () => {
+    setBundleState('loading');
+    try {
+      const res = await fetch('/api/support-bundle', { method: 'POST' });
+      if (!res.ok) throw new Error('Request failed');
+      setBundleState('success');
+    } catch {
+      setBundleState('error');
+    } finally {
+      setTimeout(() => setBundleState('idle'), 4000);
+    }
+  };
 
   useEffect(() => {
     fetch('/api/updates')
@@ -116,6 +141,16 @@ export default function App() {
             </NavLink>
           ))}
         </nav>
+        <button
+          onClick={generateBundle}
+          disabled={bundleState === 'loading'}
+          style={styles.bundleButton}
+        >
+          {bundleState === 'loading' ? 'Generating...' :
+           bundleState === 'success' ? 'Bundle Sent!' :
+           bundleState === 'error'   ? 'Failed — Retry?' :
+           'Generate Support Bundle'}
+        </button>
       </header>
       <main style={styles.main}>
         <Routes>
