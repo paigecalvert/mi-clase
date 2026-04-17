@@ -221,7 +221,11 @@ jobs:
 
       - name: Archive customer
         if: always() && steps.create-customer.outcome == 'success'
-        run: replicated customer archive "${{ steps.create-customer.outputs.customer-id }}"
+        run: |
+          replicated customer update \
+            --customer "${{ steps.create-customer.outputs.customer-id }}" \
+            --channel Unstable
+          replicated customer archive "${{ steps.create-customer.outputs.customer-id }}"
 
       - name: Archive channel
         if: always() && steps.create-channel.outcome == 'success'
