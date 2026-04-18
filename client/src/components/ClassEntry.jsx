@@ -23,6 +23,8 @@ const s = {
     background: 'none', border: '1px solid #dee2e6', borderRadius: 6,
     color: '#bc4749', cursor: 'pointer', padding: '4px 10px', fontSize: 13,
   },
+  savingText: { fontSize: 12, color: '#adb5bd', whiteSpace: 'nowrap' },
+  savedText: { fontSize: 12, color: '#386641', whiteSpace: 'nowrap' },
   body: { borderTop: '1px solid #f0f0f0', padding: '20px' },
   sectionTitle: { fontWeight: 700, fontSize: 15, marginBottom: 8, color: '#386641' },
   textarea: {
@@ -30,7 +32,6 @@ const s = {
     padding: 12, fontSize: 14, fontFamily: 'inherit', resize: 'vertical',
     outline: 'none', lineHeight: 1.5,
   },
-  savedBadge: { fontSize: 12, color: '#386641', marginTop: 4 },
 
   // Edit date modal
   overlay: {
@@ -67,10 +68,37 @@ function formatDate(dateStr) {
 export default function ClassEntry({ cls, onDelete, onUpdate }) {
   const [open, setOpen] = useState(false);
   const [notes, setNotes] = useState('');
-  const [saved, setSaved] = useState(false);
   const [editDateOpen, setEditDateOpen] = useState(false);
   const [editDate, setEditDate] = useState('');
-  const timerRef = useRef(null);
+
+  // Save status: 'idle' | 'saving' | 'saved'
+  const [saveStatus, setSaveStatus] = useState('idle');
+  const [dotIdx, setDotIdx] = useState(0);
+  const notesTimerRef = useRef(null);
+  const saveResetRef = useRef(null);
+
+  // Animate dots while saving
+  useEffect(() => {
+    if (saveStatus !== 'saving') { setDotIdx(0); return; }
+    const id = setInterval(() => setDotIdx(i => (i + 1) % 4), 280);
+    return () => clearInterval(id);
+  }, [saveStatus]);
+
+  const markSaving = useCallback(() => {
+    clearTimeout(saveResetRef.current);
+    setSaveStatus('saving');
+  }, []);
+
+  const markSaved = useCallback(() => {
+    setSaveStatus('saved');
+    clearTimeout(saveResetRef.current);
+    saveResetRef.current = setTimeout(() => setSaveStatus('idle'), 2500);
+  }, []);
+
+  const markSavedAndRefresh = useCallback(() => {
+    markSaved();
+    onUpdate();
+  }, [markSaved, onUpdate]);
 
   useEffect(() => {
     if (!open) return;
@@ -82,16 +110,16 @@ export default function ClassEntry({ cls, onDelete, onUpdate }) {
   const handleNotesChange = useCallback((e) => {
     const val = e.target.value;
     setNotes(val);
-    setSaved(false);
-    clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => {
+    markSaving();
+    clearTimeout(notesTimerRef.current);
+    notesTimerRef.current = setTimeout(() => {
       fetch(`/api/classes/${cls.id}/notes`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: val }),
-      }).then(() => setSaved(true));
+      }).then(() => markSaved());
     }, 800);
-  }, [cls.id]);
+  }, [cls.id, markSaving, markSaved]);
 
   const openEditDate = (e) => {
     e.stopPropagation();
@@ -124,6 +152,12 @@ export default function ClassEntry({ cls, onDelete, onUpdate }) {
           </div>
         </div>
         <div style={s.controls}>
+          {saveStatus === 'saving' && (
+            <span style={s.savingText}>Saving{'.'.repeat(dotIdx)}</span>
+          )}
+          {saveStatus === 'saved' && (
+            <span style={s.savedText}>✓ Saved</span>
+          )}
           <button style={s.deleteBtn} onClick={e => { e.stopPropagation(); onDelete(cls.id); }}>
             Delete
           </button>
@@ -141,11 +175,10 @@ export default function ClassEntry({ cls, onDelete, onUpdate }) {
               onChange={handleNotesChange}
               placeholder="Take notes from today's class…"
             />
-            {saved && <div style={s.savedBadge}>✓ Saved</div>}
           </section>
 
-          <VocabSection classId={cls.id} />
-          <HomeworkSection classId={cls.id} />
+          <VocabSection classId={cls.id} onSaving={markSaving} onSaved={markSavedAndRefresh} />
+          <HomeworkSection classId={cls.id} onSaving={markSaving} onSaved={markSavedAndRefresh} />
         </div>
       )}
 

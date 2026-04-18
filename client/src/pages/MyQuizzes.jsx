@@ -25,9 +25,9 @@ const s = {
   cardName: { fontWeight: 700, fontSize: 16, marginBottom: 4 },
   cardMeta: { fontSize: 13, color: '#6c757d' },
   cardBtns: { display: 'flex', gap: 8 },
-  runBtn: {
-    background: '#386641', color: '#fff', border: 'none', borderRadius: 8,
-    padding: '7px 16px', fontSize: 13, cursor: 'pointer', fontWeight: 600,
+  playBtn: {
+    background: '#386641', color: '#fff', border: 'none', borderRadius: 6,
+    padding: '5px 12px', fontSize: 13, cursor: 'pointer', fontWeight: 600,
   },
   editBtn: {
     background: 'none', border: '1px solid #dee2e6', borderRadius: 8,
@@ -101,9 +101,9 @@ export default function MyQuizzes() {
               </div>
             </div>
             <div style={s.cardBtns}>
-              <button style={s.runBtn} onClick={() => {
+              <button style={s.playBtn} onClick={() => {
                 fetch(`/api/quizzes/${q.id}`).then(r => r.json()).then(setRunQuiz);
-              }}>Run</button>
+              }}>▶ Play</button>
               <button style={s.editBtn} onClick={() => setEditQuiz(q)}>Edit</button>
               <button style={s.deleteBtn} onClick={() => deleteQuiz(q.id)}>✕</button>
             </div>

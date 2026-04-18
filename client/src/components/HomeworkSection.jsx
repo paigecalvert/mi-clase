@@ -92,7 +92,7 @@ const s = {
   },
 };
 
-export default function HomeworkSection({ classId }) {
+export default function HomeworkSection({ classId, onSaving = () => {}, onSaved = () => {} }) {
   const [homework, setHomework] = useState([]);
   const [hwTitle, setHwTitle] = useState('');
   const [hwDesc, setHwDesc] = useState('');
@@ -115,6 +115,7 @@ export default function HomeworkSection({ classId }) {
     const files = addFormFileRef.current?.files;
     if (!hwTitle.trim() && !hwDesc.trim() && !files?.length) return;
     setUploading(true);
+    onSaving();
     const form = new FormData();
     form.append('title', hwTitle);
     form.append('description', hwDesc);
@@ -126,27 +127,34 @@ export default function HomeworkSection({ classId }) {
     if (addFormFileRef.current) addFormFileRef.current.value = '';
     setUploading(false);
     fetchHomework();
+    onSaved();
   };
 
   const handleAddFiles = async (hwId, fileList) => {
     if (!fileList?.length) return;
     setUploadingTo(hwId);
+    onSaving();
     const form = new FormData();
     for (const f of fileList) form.append('file', f);
     await fetch(`/api/classes/${classId}/homework/${hwId}/files`, { method: 'POST', body: form });
     if (addFileRefs.current[hwId]) addFileRefs.current[hwId].value = '';
     setUploadingTo(null);
     fetchHomework();
+    onSaved();
   };
 
   const deleteHw = async (id) => {
+    onSaving();
     await fetch(`/api/classes/${classId}/homework/${id}`, { method: 'DELETE' });
     fetchHomework();
+    onSaved();
   };
 
   const deleteFile = async (hwId, fileId) => {
+    onSaving();
     await fetch(`/api/classes/${classId}/homework/${hwId}/files/${fileId}`, { method: 'DELETE' });
     fetchHomework();
+    onSaved();
   };
 
   const openEdit = (hw) => {
@@ -156,6 +164,7 @@ export default function HomeworkSection({ classId }) {
   };
 
   const saveEdit = async () => {
+    onSaving();
     await fetch(`/api/classes/${classId}/homework/${editing.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -163,6 +172,7 @@ export default function HomeworkSection({ classId }) {
     });
     setEditing(null);
     fetchHomework();
+    onSaved();
   };
 
   return (

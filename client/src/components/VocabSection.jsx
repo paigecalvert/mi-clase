@@ -10,7 +10,7 @@ const s = {
   },
   translation: {
     flex: 1, border: '1px solid #dee2e6', borderRadius: 8, padding: '8px 12px',
-    fontSize: 14, fontFamily: 'inherit', outline: 'none', background: '#f8f9fa',
+    fontSize: 14, fontFamily: 'inherit', outline: 'none',
   },
   swapBtn: {
     background: 'none', border: 'none',
@@ -34,7 +34,6 @@ const s = {
     fontSize: 16, lineHeight: 1, padding: 0,
   },
   empty: { color: '#6c757d', fontSize: 13, padding: '12px 14px' },
-  hint: { fontSize: 12, color: '#adb5bd', marginTop: 4 },
 
   // Flashcard modal
   overlay: {
@@ -73,7 +72,7 @@ const s = {
   },
 };
 
-export default function VocabSection({ classId }) {
+export default function VocabSection({ classId, onSaving = () => {}, onSaved = () => {} }) {
   const [vocab, setVocab] = useState([]);
   const [source, setSource] = useState('');
   const [target, setTarget] = useState('');
@@ -124,6 +123,7 @@ export default function VocabSection({ classId }) {
     const english = direction === 'es-en' ? target : source;
     if (!spanish.trim()) return;
 
+    onSaving();
     await fetch(`/api/classes/${classId}/vocabulary`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -132,11 +132,14 @@ export default function VocabSection({ classId }) {
     setSource('');
     setTarget('');
     fetchVocab();
+    onSaved();
   };
 
   const deleteWord = async (id) => {
+    onSaving();
     await fetch(`/api/classes/${classId}/vocabulary/${id}`, { method: 'DELETE' });
     fetchVocab();
+    onSaved();
   };
 
   const openCard = (word) => {
@@ -177,12 +180,6 @@ export default function VocabSection({ classId }) {
         />
         <button style={s.addBtn} onClick={addWord}>Add</button>
       </div>
-      <div style={s.hint}>
-        {direction === 'es-en'
-          ? 'Type a Spanish word — translation auto-fills.'
-          : 'Type an English word — Spanish translation auto-fills.'}
-      </div>
-
       {vocab.length === 0 ? (
         <div style={{ ...s.list, border: 'none' }}>
           <div style={s.empty}>No vocabulary words yet.</div>
