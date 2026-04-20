@@ -39,14 +39,13 @@ app.get('/health', async (req, res) => {
 
 // ── Support bundle ────────────────────────────────────────────────────────────
 app.post('/api/support-bundle', async (req, res) => {
-  const specPath = path.join(__dirname, '..', 'support-bundle-spec.yaml');
   const outputPath = `/tmp/support-bundle-${Date.now()}.tar.gz`;
 
   try {
     await new Promise((resolve, reject) => {
       execFile(
         'support-bundle',
-        ['--interactive=false', `--output=${outputPath}`, specPath],
+        ['--load-cluster-specs', '--interactive=false', `--output=${outputPath}`],
         { timeout: 180000 },
         (err, _stdout, stderr) => {
           if (err) reject(new Error(stderr || err.message));
