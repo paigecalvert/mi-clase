@@ -34,6 +34,17 @@ App is available at `http://localhost:3000`.
 
 ### Install with embedded dependencies (default)
 
+The chart must be installed into the `mi-clase` namespace. The support bundle collectors, health checks, and service discovery all target this namespace by name.
+
+The default install includes:
+
+- mi-clase app (Node.js server + React frontend)
+- PostgreSQL (bitnami subchart, `postgresql.enabled: true`)
+- Redis (bitnami subchart, `redis.enabled: true`)
+- MinIO (minio subchart, `minio.enabled: true`)
+- LibreTranslate (`libretranslate.enabled: true`)
+- Replicated SDK (always included)
+
 ```bash
 helm install mi-clase helm/ -n mi-clase --create-namespace
 ```

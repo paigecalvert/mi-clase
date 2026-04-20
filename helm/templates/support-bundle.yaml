@@ -1,0 +1,221 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: "{{ .Release.Name }}-support-bundle"
+  namespace: {{ .Release.Namespace }}
+  labels:
+    troubleshoot.sh/kind: support-bundle
+    {{- include "mi-clase.labels" . | nindent 4 }}
+stringData:
+  support-bundle-spec: |
+    apiVersion: troubleshoot.sh/v1beta2
+    kind: SupportBundle
+    metadata:
+      name: {{ include "mi-clase.fullname" . }}
+    spec:
+      collectors:
+        - logs:
+            name: mi-clase/app-logs
+            namespace: {{ .Release.Namespace }}
+            selector:
+              - app.kubernetes.io/name=mi-clase
+            limits:
+              maxLines: 10000
+
+        - logs:
+            name: mi-clase/postgresql-logs
+            namespace: {{ .Release.Namespace }}
+            selector:
+              - app.kubernetes.io/name=postgresql
+            limits:
+              maxLines: 5000
+
+        - logs:
+            name: mi-clase/redis-logs
+            namespace: {{ .Release.Namespace }}
+            selector:
+              - app.kubernetes.io/name=redis
+            limits:
+              maxLines: 5000
+
+        - logs:
+            name: mi-clase/minio-logs
+            namespace: {{ .Release.Namespace }}
+            selector:
+              - app=minio
+            limits:
+              maxLines: 5000
+
+        - logs:
+            name: mi-clase/libretranslate-logs
+            namespace: {{ .Release.Namespace }}
+            selector:
+              - app.kubernetes.io/name=mi-clase-libretranslate
+            limits:
+              maxLines: 5000
+
+        - clusterResources:
+            namespaces:
+              - {{ .Release.Namespace }}
+
+        - http:
+            collectorName: mi-clase-health
+            get:
+              url: http://{{ include "mi-clase.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:3000/health
+
+      analyzers:
+        - deploymentStatus:
+            checkName: Mi Clase Application
+            name: {{ include "mi-clase.fullname" . }}
+            namespace: {{ .Release.Namespace }}
+            outcomes:
+              - fail:
+                  when: "absent"
+                  message: |
+                    The mi-clase deployment was not found in namespace '{{ .Release.Namespace }}'.
+                    The Helm release may not have installed correctly. Check the release status with:
+                      helm status {{ .Release.Name }} -n {{ .Release.Namespace }}
+                    Re-run the installer if the release is missing.
+              - fail:
+                  when: "< 1"
+                  message: |
+                    Mi Clase has no ready pods. Common causes:
+                    - Database connection failure (check mi-clase/postgresql-logs)
+                    - PostgreSQL not yet ready — the app exits after 10 failed connection attempts
+                    - Image pull failure — check pod events: kubectl describe pod -n {{ .Release.Namespace }}
+                    Review mi-clase/app-logs for the specific startup error.
+              - pass:
+                  when: ">= 1"
+                  message: Mi Clase is running with at least one ready pod.
+
+        - statefulsetStatus:
+            checkName: Embedded PostgreSQL
+            name: {{ .Release.Name }}-postgresql
+            namespace: {{ .Release.Namespace }}
+            outcomes:
+              - pass:
+                  when: absent
+                  message: Embedded PostgreSQL is not deployed — external PostgreSQL is configured.
+              - fail:
+                  when: "< 1"
+                  message: |
+                    Embedded PostgreSQL has no ready replicas. Mi Clase cannot read or write any data
+                    and will fail to start.
+                    Check mi-clase/postgresql-logs for errors. Verify disk space is available:
+                      kubectl get pvc -n {{ .Release.Namespace }}
+              - pass:
+                  when: ">= 1"
+                  message: Embedded PostgreSQL is running.
+
+        - statefulsetStatus:
+            checkName: Embedded Redis
+            name: {{ .Release.Name }}-redis-master
+            namespace: {{ .Release.Namespace }}
+            outcomes:
+              - pass:
+                  when: absent
+                  message: Embedded Redis is not deployed — external Redis is configured.
+              - fail:
+                  when: "< 1"
+                  message: |
+                    Embedded Redis has no ready replicas. Session caching is unavailable. The app
+                    will continue running in a degraded state but performance will be impacted.
+                    Review mi-clase/redis-logs for errors.
+              - pass:
+                  when: ">= 1"
+                  message: Embedded Redis is running.
+
+        - statefulsetStatus:
+            checkName: Embedded MinIO
+            name: {{ .Release.Name }}-minio
+            namespace: {{ .Release.Namespace }}
+            outcomes:
+              - pass:
+                  when: absent
+                  message: Embedded MinIO is not deployed — external S3-compatible storage is configured.
+              - fail:
+                  when: "< 1"
+                  message: |
+                    Embedded MinIO has no ready replicas. File uploads and attachment storage are
+                    unavailable. The app will continue running but file-related features will fail.
+                    Review mi-clase/minio-logs for errors. Verify disk space:
+                      kubectl get pvc -n {{ .Release.Namespace }}
+              - pass:
+                  when: ">= 1"
+                  message: Embedded MinIO is running.
+
+        - deploymentStatus:
+            checkName: LibreTranslate
+            name: {{ .Release.Name }}-libretranslate
+            namespace: {{ .Release.Namespace }}
+            outcomes:
+              - pass:
+                  when: absent
+                  message: LibreTranslate is not deployed — an external instance is configured or translation is disabled.
+              - fail:
+                  when: "< 1"
+                  message: |
+                    The LibreTranslate deployment has no ready pods. Vocabulary translation will not
+                    work until LibreTranslate is healthy. LibreTranslate can take several minutes to
+                    start while loading language models.
+                    Review mi-clase/libretranslate-logs for startup errors.
+              - pass:
+                  when: ">= 1"
+                  message: LibreTranslate is running.
+
+        - textAnalyze:
+            checkName: Mi Clase Health Endpoint
+            fileName: http/mi-clase-health.json
+            regex: '"status":200'
+            outcomes:
+              - fail:
+                  when: "false"
+                  message: |
+                    Mi Clase's /health endpoint did not return HTTP 200. The app may be down or
+                    unable to reach its dependencies (PostgreSQL and/or Redis).
+                    Check mi-clase/app-logs for errors and verify all stateful services are running.
+              - pass:
+                  when: "true"
+                  message: Mi Clase health endpoint returned HTTP 200 — all systems healthy.
+
+        - textAnalyze:
+            checkName: Database Connection Failures
+            fileName: mi-clase/app-logs/**/*.log
+            regex: '\[db\] attempt \d+/10 failed:'
+            outcomes:
+              - fail:
+                  when: "true"
+                  message: |
+                    Mi Clase logs show repeated database connection failures at startup. The app retries
+                    up to 10 times (30 seconds total) before exiting. Common causes:
+                    - PostgreSQL is not running or not reachable from the mi-clase namespace
+                    - Incorrect host, port, username, or password in chart values
+                    - Network policy blocking the app from reaching the database
+                    Verify the database is running: kubectl get pods -n {{ .Release.Namespace }}
+              - pass:
+                  when: "false"
+                  message: No database connection failures found in Mi Clase logs.
+
+        - storageClass:
+            checkName: Default Storage Class
+            outcomes:
+              - fail:
+                  message: |
+                    No default StorageClass was found. Mi Clase's embedded PostgreSQL, Redis, and
+                    MinIO require a default StorageClass to provision persistent volumes.
+                    Install a StorageClass and mark it as default, or configure external services.
+              - pass:
+                  message: Default StorageClass is present.
+
+        - nodeResources:
+            checkName: Node Readiness
+            outcomes:
+              - fail:
+                  when: "count() == 0"
+                  message: |
+                    No schedulable nodes are available. All pods will be unschedulable.
+                    Check node status: kubectl get nodes
+                    Investigate NotReady nodes: kubectl describe node <name>
+              - pass:
+                  when: "count() >= 1"
+                  message: All nodes are schedulable and ready.
