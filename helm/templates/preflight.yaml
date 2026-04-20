@@ -7,7 +7,7 @@ metadata:
     {{- include "mi-clase.labels" . | nindent 4 }}
 stringData:
   preflight.yaml: |
-    apiVersion: troubleshoot.sh/v1beta2
+    apiVersion: troubleshoot.sh/v1beta3
     kind: Preflight
     metadata:
       name: {{ include "mi-clase.fullname" . }}-preflight
@@ -34,6 +34,9 @@ stringData:
       analyzers:
         - clusterVersion:
             checkName: Kubernetes Version
+            docString: |
+              Verifies that the cluster is running Kubernetes 1.25.0 or later, which is the minimum
+              version required by Mi Clase.
             outcomes:
               - fail:
                   when: "< 1.25.0"
@@ -45,6 +48,9 @@ stringData:
 
         - distribution:
             checkName: Kubernetes Distribution
+            docString: |
+              Checks that the Kubernetes distribution is supported. Docker Desktop and MicroK8s are
+              not supported deployment targets.
             outcomes:
               - fail:
                   when: "== docker-desktop"
@@ -63,6 +69,9 @@ stringData:
 
         - nodeResources:
             checkName: Cluster CPU
+            docString: |
+              Verifies total cluster CPU capacity. Mi Clase with embedded PostgreSQL, Redis, and MinIO
+              requires at least 2 cores; 4 cores are recommended.
             outcomes:
               - fail:
                   when: "sum(cpuCapacity) < 2"
@@ -80,6 +89,9 @@ stringData:
 
         - nodeResources:
             checkName: Node Memory
+            docString: |
+              Verifies that each node has sufficient memory. Mi Clase requires at least 2Gi per node;
+              4Gi is recommended for stable operation with embedded services.
             outcomes:
               - fail:
                   when: "min(memoryCapacity) < 2Gi"
@@ -98,6 +110,9 @@ stringData:
 
         - storageClass:
             checkName: Default Storage Class
+            docString: |
+              Checks that a default StorageClass exists for dynamic PVC provisioning. Required when
+              any of the embedded services (PostgreSQL, Redis, MinIO) are enabled.
             outcomes:
               - fail:
                   message: |
@@ -112,6 +127,9 @@ stringData:
         - postgres:
             checkName: External PostgreSQL Connectivity
             collectorName: external-postgresql
+            docString: |
+              Verifies that the cluster can reach the external PostgreSQL instance configured in
+              externalPostgresql values. Only runs when postgresql.enabled is false.
             outcomes:
               - fail:
                   when: "connected == false"
@@ -133,6 +151,9 @@ stringData:
         - redis:
             checkName: External Redis Connectivity
             collectorName: external-redis
+            docString: |
+              Verifies that the cluster can reach the external Redis instance configured in
+              externalRedis values. Only runs when redis.enabled is false.
             outcomes:
               - fail:
                   when: "connected == false"
@@ -154,6 +175,9 @@ stringData:
             checkName: External LibreTranslate Connectivity
             fileName: http/libretranslate-connectivity/result.json
             regex: '"status":2[0-9][0-9]'
+            docString: |
+              Verifies that the external LibreTranslate instance is reachable from the cluster.
+              Only runs when libretranslate.enabled is false and libretranslate.externalUrl is set.
             outcomes:
               - fail:
                   when: "false"
