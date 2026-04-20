@@ -151,7 +151,8 @@ jobs:
       - name: Install Replicated CLI
         run: |
           set -euo pipefail
-          download_url=$(curl -s https://api.github.com/repos/replicatedhq/replicated/releases/latest \
+          download_url=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/repos/replicatedhq/replicated/releases/latest \
             | jq -r '.assets[] | select(.name | test("linux_amd64.tar.gz$")) | .browser_download_url')
           curl -sL "$download_url" | tar xz -C /tmp replicated
           sudo mv /tmp/replicated /usr/local/bin/replicated
