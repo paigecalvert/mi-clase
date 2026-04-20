@@ -19,6 +19,13 @@ RUN npm run build
 FROM node:20-alpine
 WORKDIR /app
 
+# Install support-bundle CLI for generating support bundles
+RUN apk add --no-cache curl && \
+    ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/') && \
+    curl -sL "https://github.com/replicatedhq/troubleshoot/releases/latest/download/support-bundle_linux_${ARCH}.tar.gz" \
+    | tar xz -C /usr/local/bin support-bundle && \
+    apk del curl
+
 COPY package*.json ./
 RUN npm ci --omit=dev
 
