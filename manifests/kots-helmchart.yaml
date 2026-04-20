@@ -1,0 +1,107 @@
+apiVersion: kots.io/v1beta2
+kind: HelmChart
+metadata:
+  name: mi-clase
+spec:
+  chart:
+    name: mi-clase
+    chartVersion: 0.4.0
+
+  releaseName: mi-clase
+  namespace: mi-clase
+
+  values:
+    service:
+      type: ClusterIP
+
+    ingress:
+      enabled: true
+      className: traefik
+      hosts:
+        - host: repl{{ ConfigOption "hostname" }}
+          paths:
+            - path: /
+              pathType: Prefix
+      tls:
+        - hosts:
+            - repl{{ ConfigOption "hostname" }}
+          secretName: mi-clase-tls
+
+    tls:
+      mode: "auto"
+      secretName: mi-clase-tls
+      certManager:
+        issuerKind: ClusterIssuer
+        issuerName: letsencrypt-prod
+        email: 'repl{{ ConfigOption "acme_email" }}'
+
+    # cert-manager is installed by EC as an extension; chart only needs to create the issuer
+    certManager:
+      install: false
+      createIssuer: true
+
+    # Traefik is installed by EC as an extension
+    ingressController:
+      enabled: false
+
+    postgresql:
+      enabled: repl{{ ConfigOptionEquals "postgres_type" "embedded_postgres" }}
+      auth:
+        password: repl{{ ConfigOption "embedded_postgres_password" }}
+
+    redis:
+      enabled: repl{{ ConfigOptionEquals "redis_type" "embedded_redis" }}
+
+    # MinIO is always embedded in EC installs
+    minio:
+      enabled: true
+
+    libretranslate:
+      enabled: repl{{ ConfigOptionEquals "libretranslate_type" "embedded" }}
+
+  optionalValues:
+    - when: "repl{{ ConfigOptionEquals `postgres_type` `external_postgres` }}"
+      recursiveMerge: true
+      values:
+        externalPostgresql:
+          host: "repl{{ ConfigOption `external_postgres_host` }}"
+          port: "repl{{ ConfigOption `external_postgres_port` }}"
+          database: "repl{{ ConfigOption `external_postgres_database` }}"
+          username: "repl{{ ConfigOption `external_postgres_username` }}"
+          password: "repl{{ ConfigOption `external_postgres_password` }}"
+
+    - when: "repl{{ ConfigOptionEquals `redis_type` `external_redis` }}"
+      recursiveMerge: true
+      values:
+        externalRedis:
+          host: "repl{{ ConfigOption `external_redis_host` }}"
+          port: "repl{{ ConfigOption `external_redis_port` }}"
+          password: "repl{{ ConfigOption `external_redis_password` }}"
+
+    - when: "repl{{ ConfigOptionEquals `libretranslate_type` `external` }}"
+      recursiveMerge: true
+      values:
+        libretranslate:
+          externalUrl: "repl{{ ConfigOption `libretranslate_external_url` }}"
+
+    # Quiz feature: only enabled when license has quiz_feature AND admin has turned it on
+    - when: "repl{{ ConfigOptionEquals `quizzes_enabled` `1` }}"
+      recursiveMerge: true
+      values:
+        features:
+          quizzesEnabled: "true"
+
+  # builder ensures all conditional images are included in air gap bundles
+  builder:
+    postgresql:
+      enabled: true
+    redis:
+      enabled: true
+    minio:
+      enabled: true
+    libretranslate:
+      enabled: true
+    ingressController:
+      enabled: false
+    certManager:
+      install: false

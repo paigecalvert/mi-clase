@@ -188,12 +188,20 @@
       "additionalProperties": false,
       "properties": {
         "install": { "type": "boolean" },
+        "createIssuer": { "type": "boolean" },
         "crds": {
           "type": "object",
           "properties": {
             "enabled": { "type": "boolean" }
           }
         }
+      }
+    },
+    "features": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "quizzesEnabled": { "type": "string" }
       }
     },
     "ingressController": {

@@ -50,8 +50,11 @@ tls:
 # ── cert-manager ─────────────────────────────────────────────────────────────
 # Set install: true to deploy cert-manager as part of this chart.
 # Set install: false if cert-manager is already installed in the cluster.
+# Set createIssuer: true (without install: true) when cert-manager is provided
+# by the environment (e.g. EC extension) and the chart should only create the issuer.
 certManager:
   install: false
+  createIssuer: false
 
 # Subchart values passed through to cert-manager (must use hyphenated chart name as key)
 cert-manager:
@@ -139,6 +142,12 @@ externalMinio:
 
 fileStorage:
   bucket: mi-clase
+
+# ── LibreTranslate ──────────────────────────────────────────────────────────
+features:
+  # When set to "true", quizzes are explicitly enabled (KOTS/EC path via LicenseFieldValue).
+  # When empty, the app falls back to checking the SDK at runtime (Helm path).
+  quizzesEnabled: ""
 
 # ── LibreTranslate ──────────────────────────────────────────────────────────
 libretranslate:

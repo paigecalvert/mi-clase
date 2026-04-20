@@ -1,0 +1,204 @@
+apiVersion: kots.io/v1beta1
+kind: Config
+metadata:
+  name: mi-clase
+spec:
+  groups:
+    - name: general
+      title: General
+      items:
+        - name: hostname
+          title: Hostname
+          type: text
+          required: true
+          help_text: |
+            The hostname customers will use to access Mi Clase (e.g. miclase.example.com).
+            Point a DNS A record at this VM's IP address before installing.
+            For testing without DNS, use <VM-IP>.nip.io (e.g. 1.2.3.4.nip.io).
+          validation:
+            regex:
+              pattern: '^[a-zA-Z0-9][a-zA-Z0-9\-\.]+[a-zA-Z0-9]$'
+              message: Must be a valid hostname (e.g. miclase.example.com or 1.2.3.4.nip.io). No spaces, no leading or trailing hyphens.
+
+        - name: acme_email
+          title: Let's Encrypt Email
+          type: text
+          required: true
+          help_text: |
+            Email address for Let's Encrypt TLS certificate registration.
+            You'll receive renewal notices here. Must be a valid email (e.g. admin@example.com).
+          validation:
+            regex:
+              pattern: '^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$'
+              message: Must be a valid email address (e.g. admin@example.com).
+
+    - name: database
+      title: Database
+      items:
+        - name: postgres_type
+          title: PostgreSQL
+          type: select_one
+          default: embedded_postgres
+          help_text: |
+            Choose whether to use the embedded PostgreSQL instance or connect to an external one.
+            Use embedded for simple single-VM installs. Use external to connect to a managed
+            database (RDS, Cloud SQL, etc.) or a pre-existing PostgreSQL server.
+          items:
+            - name: embedded_postgres
+              title: Embedded PostgreSQL
+            - name: external_postgres
+              title: External PostgreSQL
+
+        - name: embedded_postgres_password
+          title: Embedded PostgreSQL Password
+          type: password
+          value: 'repl{{ RandomString 32 }}'
+          when: 'repl{{ ConfigOptionEquals "postgres_type" "embedded_postgres" }}'
+          help_text: |
+            Auto-generated on first install and preserved across upgrades. Leave as-is unless
+            you need to set a specific password.
+
+        - name: external_postgres_host
+          title: Host
+          type: text
+          required: true
+          when: 'repl{{ ConfigOptionEquals "postgres_type" "external_postgres" }}'
+          help_text: |
+            Hostname or IP address of your PostgreSQL server (e.g. postgres.example.com or 10.0.0.5).
+            The server must be reachable from within the cluster.
+          validation:
+            regex:
+              pattern: '^[a-zA-Z0-9][a-zA-Z0-9\-\.]+[a-zA-Z0-9]$'
+              message: Must be a valid hostname or IP address (e.g. postgres.example.com or 10.0.0.5).
+
+        - name: external_postgres_port
+          title: Port
+          type: text
+          default: "5432"
+          when: 'repl{{ ConfigOptionEquals "postgres_type" "external_postgres" }}'
+          help_text: |
+            TCP port PostgreSQL is listening on. The default is 5432.
+          validation:
+            regex:
+              pattern: '^([1-9][0-9]{0,4})$'
+              message: Must be a valid port number (1–65535).
+
+        - name: external_postgres_database
+          title: Database Name
+          type: text
+          default: mi_clase
+          when: 'repl{{ ConfigOptionEquals "postgres_type" "external_postgres" }}'
+          help_text: |
+            Name of the PostgreSQL database Mi Clase should use. Must already exist on the server.
+
+        - name: external_postgres_username
+          title: Username
+          type: text
+          default: mi_clase
+          when: 'repl{{ ConfigOptionEquals "postgres_type" "external_postgres" }}'
+          help_text: |
+            PostgreSQL username Mi Clase will use to authenticate. Must have full access to
+            the specified database.
+
+        - name: external_postgres_password
+          title: Password
+          type: password
+          required: true
+          when: 'repl{{ ConfigOptionEquals "postgres_type" "external_postgres" }}'
+          help_text: |
+            Password for the PostgreSQL user above.
+
+    - name: cache
+      title: Cache
+      items:
+        - name: redis_type
+          title: Redis
+          type: select_one
+          default: embedded_redis
+          help_text: |
+            Choose whether to use the embedded Redis instance or connect to an external one.
+            Use embedded for simple installs. Use external to connect to a managed Redis
+            service (ElastiCache, Memorystore, etc.) or a pre-existing Redis server.
+          items:
+            - name: embedded_redis
+              title: Embedded Redis
+            - name: external_redis
+              title: External Redis
+
+        - name: external_redis_host
+          title: Host
+          type: text
+          required: true
+          when: 'repl{{ ConfigOptionEquals "redis_type" "external_redis" }}'
+          help_text: |
+            Hostname or IP address of your Redis server (e.g. redis.example.com or 10.0.0.6).
+            The server must be reachable from within the cluster.
+          validation:
+            regex:
+              pattern: '^[a-zA-Z0-9][a-zA-Z0-9\-\.]+[a-zA-Z0-9]$'
+              message: Must be a valid hostname or IP address (e.g. redis.example.com or 10.0.0.6).
+
+        - name: external_redis_port
+          title: Port
+          type: text
+          default: "6379"
+          when: 'repl{{ ConfigOptionEquals "redis_type" "external_redis" }}'
+          help_text: |
+            TCP port Redis is listening on. The default is 6379.
+          validation:
+            regex:
+              pattern: '^([1-9][0-9]{0,4})$'
+              message: Must be a valid port number (1–65535).
+
+        - name: external_redis_password
+          title: Password
+          type: password
+          when: 'repl{{ ConfigOptionEquals "redis_type" "external_redis" }}'
+          help_text: |
+            Password for Redis authentication. Leave blank if your Redis server does not
+            require a password.
+
+    - name: translation
+      title: Translation
+      items:
+        - name: libretranslate_type
+          title: Translation Service
+          type: select_one
+          default: embedded
+          help_text: |
+            Mi Clase uses LibreTranslate to auto-fill English translations when you add vocabulary
+            words. Choose embedded to run LibreTranslate in-cluster, external to connect to an
+            existing LibreTranslate server, or disabled to turn off auto-translation entirely.
+          items:
+            - name: embedded
+              title: Embedded LibreTranslate
+            - name: external
+              title: External LibreTranslate
+            - name: disabled
+              title: Disabled
+
+        - name: libretranslate_external_url
+          title: LibreTranslate URL
+          type: text
+          required: true
+          when: 'repl{{ ConfigOptionEquals "libretranslate_type" "external" }}'
+          help_text: |
+            URL of your external LibreTranslate instance (e.g. http://libretranslate.example.com:5000).
+            The instance must support Spanish and English translation.
+          validation:
+            regex:
+              pattern: '^https?://.+'
+              message: Must be a valid URL starting with http:// or https://.
+
+    - name: features
+      title: Features
+      items:
+        - name: quizzes_enabled
+          title: Enable Quiz Feature
+          type: bool
+          default: "1"
+          when: 'repl{{ LicenseFieldValue "quiz_feature" }}'
+          help_text: |
+            Enables the vocabulary quiz feature. When enabled, users can create custom quizzes
+            from their vocabulary words and track scores over time. Requires the Quizzes
+            license entitlement.

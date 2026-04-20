@@ -4,8 +4,17 @@ const { pool } = require('../db');
 const { getLicenseField } = require('../replicated');
 
 // Block all quiz routes when quiz_feature license field is not enabled.
+// KOTS/EC path: QUIZ_FEATURE_ENABLED env var is set to "true" via LicenseFieldValue in
+// kots-helmchart.yaml when the license has the quiz_feature entitlement.
+// Helm path: falls back to querying the SDK directly at runtime.
 // Fails open when the SDK is unreachable (local dev without Replicated).
 router.use(async (req, res, next) => {
+  const quizFeatureEnabled = process.env.QUIZ_FEATURE_ENABLED;
+  if (quizFeatureEnabled === 'true') {
+    // Explicitly enabled by KOTS — no SDK check needed
+    return next();
+  }
+  // Helm path or KOTS without entitlement: check SDK
   try {
     const field = await getLicenseField('quiz_feature');
     if (field.value !== true) {

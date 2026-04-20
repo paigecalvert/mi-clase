@@ -50,6 +50,8 @@ spec:
               value: {{ if .Values.minio.enabled }}"false"{{ else }}{{ .Values.externalMinio.useSSL | toString | quote }}{{ end }}
             - name: LIBRE_TRANSLATE_URL
               value: {{ include "mi-clase.libreTranslateUrl" . | quote }}
+            - name: QUIZ_FEATURE_ENABLED
+              value: {{ .Values.features.quizzesEnabled | quote }}
           envFrom:
             - secretRef:
                 name: {{ include "mi-clase.fullname" . }}
