@@ -166,7 +166,7 @@ stringData:
         - textAnalyze:
             checkName: Mi Clase Health Endpoint
             fileName: mi-clase-health.json
-            regex: '"status":200'
+            regex: '"status": "ok"'
             outcomes:
               - fail:
                   when: "false"
@@ -176,7 +176,7 @@ stringData:
                     Check mi-clase/app-logs for errors and verify all stateful services are running.
               - pass:
                   when: "true"
-                  message: Mi Clase health endpoint returned HTTP 200 — all systems healthy.
+                  message: Mi Clase health endpoint reports all systems healthy.
 
         - textAnalyze:
             checkName: Database Connection Failures
