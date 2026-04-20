@@ -165,7 +165,7 @@ stringData:
 
         - textAnalyze:
             checkName: Mi Clase Health Endpoint
-            fileName: http/mi-clase-health.json
+            fileName: mi-clase-health.json
             regex: '"status":200'
             outcomes:
               - fail:
