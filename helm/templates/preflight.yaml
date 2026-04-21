@@ -24,7 +24,7 @@ stringData:
             collectorName: external-redis
             uri: "redis://:{{ .Values.externalRedis.password }}@{{ .Values.externalRedis.host }}:{{ .Values.externalRedis.port }}"
         {{- end }}
-        {{- if and (not .Values.libretranslate.enabled) .Values.libretranslate.externalUrl }}
+        {{- if false }}
         - http:
             collectorName: libretranslate-connectivity
             get:
@@ -169,8 +169,7 @@ stringData:
               - warn:
                   message: "Redis connectivity check returned an unexpected result. Check the preflight collector logs."
         {{- end }}
-        {{- if and (not .Values.libretranslate.enabled) .Values.libretranslate.externalUrl }}
-
+        {{- if false }}
         - textAnalyze:
             checkName: External LibreTranslate Connectivity
             fileName: http/libretranslate-connectivity/result.json
