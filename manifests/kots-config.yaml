@@ -23,6 +23,7 @@ spec:
         - name: acme_email
           title: Let's Encrypt Email
           type: text
+          default: 'repl{{ LicenseFieldValue "customerEmail" }}'
           required: true
           help_text: |
             Email address for Let's Encrypt TLS certificate registration.
