@@ -144,7 +144,6 @@ jobs:
           version: ${{ steps.chart-version.outputs.value }}
           registry-username: ${{ env.CUSTOMER_EMAIL }}
           registry-password: ${{ steps.create-customer.outputs.license-id }}
-          timeout: 10m
           values: |
             libretranslate:
               enabled: false
