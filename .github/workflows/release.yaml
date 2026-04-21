@@ -115,7 +115,8 @@ jobs:
       - name: Stamp chart version into KOTS HelmChart manifest
         env:
           VERSION: ${{ needs.version.outputs.version }}
-        run: sed -i "s/chartVersion: .*/chartVersion: ${VERSION}/" manifests/kots-helmchart.yaml
+        run: |
+          sed -i "s/chartVersion: .*/chartVersion: ${VERSION}/" manifests/kots-helmchart.yaml
 
       - name: Package chart
         run: |
@@ -211,6 +212,10 @@ jobs:
           version: ${{ needs.version.outputs.version }}
           registry-username: ${{ env.CUSTOMER_EMAIL }}
           registry-password: ${{ steps.create-customer.outputs.license-id }}
+          timeout: 10m
+          values: |
+            libretranslate:
+              enabled: false
 
       - name: Health check
         run: |

@@ -130,6 +130,8 @@ minio:
       cpu: "500m"
   image:
     repository: proxy.replicated.com/proxy/mi-clase/quay.io/minio/minio
+  mcImage:
+    repository: proxy.replicated.com/proxy/mi-clase/quay.io/minio/mc
   imagePullSecrets:
     - name: enterprise-pull-secret
 
