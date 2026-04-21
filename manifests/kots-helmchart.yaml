@@ -14,24 +14,6 @@ spec:
     image:
       repository: 'repl{{ ReplicatedImageName (HelmValue ".image.repository") }}'
 
-    postgresql:
-      image:
-        registry: 'repl{{ ReplicatedImageRegistry (HelmValue ".postgresql.image.registry") }}'
-
-    redis:
-      image:
-        registry: 'repl{{ ReplicatedImageRegistry (HelmValue ".redis.image.registry") }}'
-
-    minio:
-      image:
-        repository: 'repl{{ ReplicatedImageName (HelmValue ".minio.image.repository") }}'
-      mcImage:
-        repository: 'repl{{ ReplicatedImageName (HelmValue ".minio.mcImage.repository") }}'
-
-    libretranslate:
-      image:
-        repository: 'repl{{ ReplicatedImageName (HelmValue ".libretranslate.image.repository") }}'
-
     replicated:
       image:
         registry: 'repl{{ ReplicatedImageRegistry (HelmValue ".replicated.image.registry") }}'
@@ -70,18 +52,28 @@ spec:
       enabled: false
 
     postgresql:
+      image:
+        registry: 'repl{{ ReplicatedImageRegistry (HelmValue ".postgresql.image.registry") }}'
       enabled: repl{{ ConfigOptionEquals "postgres_type" "embedded_postgres" }}
       auth:
         password: repl{{ ConfigOption "embedded_postgres_password" }}
 
     redis:
+      image:
+        registry: 'repl{{ ReplicatedImageRegistry (HelmValue ".redis.image.registry") }}'
       enabled: repl{{ ConfigOptionEquals "redis_type" "embedded_redis" }}
 
     # MinIO is always embedded in EC installs
     minio:
+      image:
+        repository: 'repl{{ ReplicatedImageName (HelmValue ".minio.image.repository") }}'
+      mcImage:
+        repository: 'repl{{ ReplicatedImageName (HelmValue ".minio.mcImage.repository") }}'
       enabled: true
 
     libretranslate:
+      image:
+        repository: 'repl{{ ReplicatedImageName (HelmValue ".libretranslate.image.repository") }}'
       enabled: repl{{ ConfigOptionEquals "libretranslate_type" "embedded" }}
 
   optionalValues:
