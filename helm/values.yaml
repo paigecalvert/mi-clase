@@ -52,6 +52,7 @@ tls:
 # Set install: false if cert-manager is already installed in the cluster.
 certManager:
   install: false
+  createIssuer: false
 
 # Subchart values passed through to cert-manager (must use hyphenated chart name as key)
 cert-manager:
