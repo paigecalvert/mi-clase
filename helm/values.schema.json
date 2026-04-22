@@ -215,6 +215,13 @@
     "replicated": {
       "type": "object"
     },
+    "features": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "quizzesEnabled": { "type": "string" }
+      }
+    },
     "libretranslate": {
       "type": "object",
       "additionalProperties": false,

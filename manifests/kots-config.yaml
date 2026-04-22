@@ -190,16 +190,3 @@ spec:
             regex:
               pattern: '^https?://.+'
               message: Must be a valid URL starting with http:// or https://.
-
-    - name: features
-      title: Features
-      items:
-        - name: quizzes_enabled
-          title: Enable Quiz Feature
-          type: bool
-          default: "1"
-          when: 'repl{{ LicenseFieldValue "quiz_feature" }}'
-          help_text: |
-            Enables the vocabulary quiz feature. When enabled, users can create custom quizzes
-            from their vocabulary words and track scores over time. Requires the Quizzes
-            license entitlement.
