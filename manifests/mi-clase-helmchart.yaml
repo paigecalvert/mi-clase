@@ -4,7 +4,13 @@ kind: HelmChart
 metadata:
   name: samplechart
 spec:
-  # chart identifies a matching chart from a .tgz
   chart:
     name: mi-clase
     chartVersion: 0.4.0
+
+  releaseName: mi-clase
+  namespace: mi-clase
+
+  values:
+    features:
+      quizzesEnabled: 'repl{{ LicenseFieldValue "quiz_feature" }}'
