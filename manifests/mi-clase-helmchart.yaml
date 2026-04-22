@@ -23,22 +23,12 @@ spec:
           paths:
             - path: /
               pathType: Prefix
-      tls:
-        - hosts:
-            - repl{{ ConfigOption "hostname" }}
-          secretName: mi-clase-tls
-
     tls:
-      mode: "auto"
-      secretName: mi-clase-tls
-      certManager:
-        issuerKind: ClusterIssuer
-        issuerName: letsencrypt-prod
-        email: 'repl{{ ConfigOption "acme_email" }}'
+      mode: ""
 
     certManager:
       install: false
-      createIssuer: true
+      createIssuer: false
 
     ingressController:
       enabled: false
