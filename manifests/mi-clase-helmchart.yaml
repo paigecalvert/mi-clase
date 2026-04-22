@@ -12,5 +12,36 @@ spec:
   namespace: mi-clase
 
   values:
+    service:
+      type: ClusterIP
+
+    ingress:
+      enabled: true
+      className: traefik
+      hosts:
+        - host: repl{{ ConfigOption "hostname" }}
+          paths:
+            - path: /
+              pathType: Prefix
+      tls:
+        - hosts:
+            - repl{{ ConfigOption "hostname" }}
+          secretName: mi-clase-tls
+
+    tls:
+      mode: "auto"
+      secretName: mi-clase-tls
+      certManager:
+        issuerKind: ClusterIssuer
+        issuerName: letsencrypt-prod
+        email: 'repl{{ ConfigOption "acme_email" }}'
+
+    certManager:
+      install: false
+      createIssuer: true
+
+    ingressController:
+      enabled: false
+
     features:
       quizzesEnabled: 'repl{{ LicenseFieldValue "quiz_feature" }}'
