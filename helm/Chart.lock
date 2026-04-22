@@ -1,10 +1,10 @@
 dependencies:
 - name: postgresql
   repository: https://charts.bitnami.com/bitnami
-  version: 18.5.22
+  version: 18.6.1
 - name: redis
   repository: https://charts.bitnami.com/bitnami
-  version: 25.3.11
+  version: 25.3.12
 - name: minio
   repository: https://charts.min.io/
   version: 5.4.0
@@ -13,9 +13,9 @@ dependencies:
   version: v1.20.2
 - name: traefik
   repository: https://helm.traefik.io/traefik
-  version: 39.0.7
+  version: 39.0.8
 - name: replicated
   repository: oci://registry.replicated.com/library
   version: 1.19.2
-digest: sha256:d84dd7d127804ea76fa9ca9605b25502d86d778bde850f22fcd987d521d24a47
-generated: "2026-04-16T16:22:30.942558-06:00"
+digest: sha256:46e361684d7526d01f18c1aa60b4c47f013cf52519d02b3b533a73eb4456a7e4
+generated: "2026-04-22T09:04:54.016796-06:00"
