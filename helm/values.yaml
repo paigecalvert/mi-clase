@@ -140,6 +140,12 @@ externalMinio:
 fileStorage:
   bucket: mi-clase
 
+# ── Features ────────────────────────────────────────────────────────────────
+features:
+  # When set to "true", quizzes are explicitly enabled (KOTS/EC path via license entitlement).
+  # When empty, the app falls back to checking the SDK at runtime (plain Helm path).
+  quizzesEnabled: ""
+
 # ── LibreTranslate ──────────────────────────────────────────────────────────
 libretranslate:
   enabled: true
