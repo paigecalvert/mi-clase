@@ -20,11 +20,29 @@ spec:
               pattern: '^[a-zA-Z0-9][a-zA-Z0-9\-\.]+[a-zA-Z0-9]$'
               message: Must be a valid hostname (e.g. miclase.example.com or 1.2.3.4.nip.io). No spaces, no leading or trailing hyphens.
 
+    - name: tls
+      title: TLS
+      items:
+        - name: tls_mode
+          title: Certificate Mode
+          type: select_one
+          default: auto
+          help_text: |
+            Choose how TLS certificates are provisioned.
+            Automatic uses Let's Encrypt to provision a trusted certificate (requires a public hostname and port 80 access).
+            Self-signed generates a certificate locally via cert-manager (no DNS or port 80 required, browser will show a warning).
+          items:
+            - name: auto
+              title: Automatic (Let's Encrypt)
+            - name: selfsigned
+              title: Self-signed
+
         - name: acme_email
           title: Let's Encrypt Email
           type: text
           default: 'repl{{ LicenseFieldValue "customerEmail" }}'
           required: true
+          when: 'repl{{ ConfigOptionEquals "tls_mode" "auto" }}'
           help_text: |
             Email address for Let's Encrypt TLS certificate registration.
             You'll receive renewal notices here. Must be a valid email (e.g. admin@example.com).

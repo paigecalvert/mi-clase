@@ -97,6 +97,19 @@ helm template mi-clase helm/ --debug
 
 ---
 
+## EC Install Testing on CMX
+
+When testing an Embedded Cluster install using [Compatibility Matrix (CMX)](https://docs.replicated.com/vendor/testing-about), use the following port setup:
+
+| Purpose | Target Port | Notes |
+|---|---|---|
+| EC install wizard | 30080 | Used during install/upgrade only |
+| App (Traefik HTTPS) | 30443 | Use this for the app. Paste the auto-generated hostname in the **Hostname** field in the config screen |
+
+Go to `https://<30443-hostname>` to access the app after install. Accept the self-signed certificate warning if TLS mode is set to self-signed.
+
+---
+
 ## TLS
 
 Enable the ingress and choose a TLS mode via `--set tls.mode=<mode>`.

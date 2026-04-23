@@ -2,7 +2,7 @@
 apiVersion: kots.io/v1beta2
 kind: HelmChart
 metadata:
-  name: samplechart
+  name: mi-clase
 spec:
   chart:
     name: mi-clase
@@ -12,5 +12,36 @@ spec:
   namespace: mi-clase
 
   values:
+    service:
+      type: ClusterIP
+
+    ingress:
+      enabled: true
+      className: traefik
+      hosts:
+        - host: repl{{ ConfigOption "hostname" }}
+          paths:
+            - path: /
+              pathType: Prefix
+      tls:
+        - hosts:
+            - repl{{ ConfigOption "hostname" }}
+          secretName: mi-clase-tls
+
+    tls:
+      mode: 'repl{{ ConfigOption "tls_mode" }}'
+      secretName: mi-clase-tls
+      certManager:
+        issuerKind: ClusterIssuer
+        issuerName: letsencrypt-prod
+        email: 'repl{{ ConfigOption "acme_email" }}'
+
+    certManager:
+      install: false
+      createIssuer: repl{{ ConfigOptionEquals "tls_mode" "auto" }}
+
+    ingressController:
+      enabled: false
+
     features:
       quizzesEnabled: 'repl{{ LicenseFieldValue "quiz_feature" }}'

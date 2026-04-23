@@ -1,4 +1,4 @@
-{{- if and (eq .Values.tls.mode "auto") .Values.certManager.install }}
+{{- if and (eq .Values.tls.mode "auto") (or .Values.certManager.install .Values.certManager.createIssuer) }}
 ---
 apiVersion: v1
 kind: ServiceAccount

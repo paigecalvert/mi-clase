@@ -79,6 +79,16 @@
               }
             }
           }
+        },
+        "tls": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "hosts": { "type": "array", "items": { "type": "string" } },
+              "secretName": { "type": "string" }
+            }
+          }
         }
       }
     },
@@ -188,6 +198,7 @@
       "additionalProperties": false,
       "properties": {
         "install": { "type": "boolean" },
+        "createIssuer": { "type": "boolean" },
         "crds": {
           "type": "object",
           "properties": {
