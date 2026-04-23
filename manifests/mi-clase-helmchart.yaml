@@ -12,6 +12,31 @@ spec:
   namespace: mi-clase
 
   values:
+    image:
+      repository: 'repl{{ ReplicatedImageName (HelmValue ".image.repository") }}'
+
+    replicated:
+      image:
+        registry: 'repl{{ ReplicatedImageRegistry (HelmValue ".replicated.image.registry") }}'
+
+    postgresql:
+      image:
+        registry: 'repl{{ ReplicatedImageRegistry (HelmValue ".postgresql.image.registry") }}'
+
+    redis:
+      image:
+        registry: 'repl{{ ReplicatedImageRegistry (HelmValue ".redis.image.registry") }}'
+
+    minio:
+      image:
+        repository: 'repl{{ ReplicatedImageName (HelmValue ".minio.image.repository") }}'
+      mcImage:
+        repository: 'repl{{ ReplicatedImageName (HelmValue ".minio.mcImage.repository") }}'
+
+    libretranslate:
+      image:
+        repository: 'repl{{ ReplicatedImageName (HelmValue ".libretranslate.image.repository") }}'
+
     service:
       type: ClusterIP
 
@@ -45,3 +70,17 @@ spec:
 
     features:
       quizzesEnabled: 'repl{{ LicenseFieldValue "quiz_feature" }}'
+
+  builder:
+    postgresql:
+      enabled: true
+    redis:
+      enabled: true
+    minio:
+      enabled: true
+    libretranslate:
+      enabled: true
+    ingressController:
+      enabled: false
+    certManager:
+      install: false
