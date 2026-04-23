@@ -112,6 +112,12 @@ jobs:
         run: |
           yq -i ".image.tag = \"${VERSION}\"" helm/values.yaml
 
+      - name: Stamp chart version into HelmChart manifest
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          yq -i ".spec.chart.chartVersion = \"${VERSION}\"" manifests/mi-clase-helmchart.yaml
+
       - name: Package chart
         run: |
           rm -f manifests/mi-clase-*.tgz
