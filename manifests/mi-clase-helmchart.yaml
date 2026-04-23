@@ -29,12 +29,16 @@ spec:
           secretName: mi-clase-tls
 
     tls:
-      mode: "selfsigned"
+      mode: 'repl{{ ConfigOption "tls_mode" }}'
       secretName: mi-clase-tls
+      certManager:
+        issuerKind: ClusterIssuer
+        issuerName: letsencrypt-prod
+        email: 'repl{{ ConfigOption "acme_email" }}'
 
     certManager:
       install: false
-      createIssuer: false
+      createIssuer: repl{{ ConfigOptionEquals "tls_mode" "auto" }}
 
     ingressController:
       enabled: false
