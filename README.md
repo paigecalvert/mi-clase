@@ -33,7 +33,6 @@ Use this flow for a hot reload of the frontend, rather than having to rebuild it
 1. In another terminal window, run:
    ```
    cd client
-   npm install
    npm run dev
    ```
 
