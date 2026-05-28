@@ -1,30 +1,45 @@
 # Mi Clase
 
-A Spanish class tracker for logging class sessions, vocabulary, homework, and quizzes — with built-in translation via LibreTranslate.
+A Spanish class tracker for logging class sessions, notes, vocabulary, homework, and quizzes.
 
 **Stack:** Node.js/Express · React/Vite · PostgreSQL · Redis · MinIO · LibreTranslate
 
 ---
 
-## Local Development
+## Quickstart
 
-```bash
-# Install dependencies
-npm install
-cd client && npm install && cd ..
+1. Install Docker Desktop.
+  
+1. Configure the environment:
+   ```
+   cp .env.example .env
+   ```
+1. From the repo root, run:
+   ```
+   npm install
+   npm run build:client
+   npm run dev:local
+   ```
+1. In a browser, open `http://localhost:3000`.
 
-# Configure environment
-cp .env.example .env
+## Local development
 
-# Start backing services and run the app
-npm run dev:local
-```
+Use this flow for a hot reload of the frontend, rather than having to rebuild it to see your local changes.
 
-App is available at `http://localhost:3000`.
+1. From the repo root, run:
+   ```
+   npm run dev:local
+   ```
+1. In another terminal window, run:
+   ```
+   cd client
+   npm install
+   npm run dev
+   ```
 
 ---
 
-## Helm
+## Install with Helm
 
 ### Prerequisites
 
@@ -95,28 +110,13 @@ helm lint helm/
 helm template mi-clase helm/ --debug
 ```
 
----
+## TLS options
 
-## EC Install Testing on CMX
+You can enable ingress and choose a TLS mode with `--set tls.mode=<mode>`.
 
-When testing an Embedded Cluster install using [Compatibility Matrix (CMX)](https://docs.replicated.com/vendor/testing-about), use the following port setup:
+### Auto (cert-manager + Let's Encrypt)
 
-| Purpose | Target Port | Notes |
-|---|---|---|
-| EC install wizard | 30080 | Used during install/upgrade only |
-| App (Traefik HTTPS) | 30443 | Use this for the app. Paste the auto-generated hostname in the **Hostname** field in the config screen |
-
-Go to `https://<30443-hostname>` to access the app after install. Accept the self-signed certificate warning if TLS mode is set to self-signed.
-
----
-
-## TLS
-
-Enable the ingress and choose a TLS mode via `--set tls.mode=<mode>`.
-
-### Auto — cert-manager + Let's Encrypt
-
-The chart installs cert-manager and automatically creates a `ClusterIssuer` and provisions a certificate via a post-install job. DNS for the configured host must be pointed at the load balancer IP before the ACME challenge can complete.
+The chart installs cert-manager and automatically creates a `ClusterIssuer` and provisions a certificate with a post-install job. DNS for the configured host must be pointed at the load balancer IP before the ACME challenge can complete.
 
 ```bash
 helm install mi-clase helm/ -n mi-clase --create-namespace \
@@ -135,7 +135,7 @@ Watch the certificate being provisioned:
 kubectl get certificate -n mi-clase -w
 ```
 
-### Manual — bring your own certificate
+### Bring your own certificate
 
 Create the TLS secret first, then install:
 
@@ -153,7 +153,7 @@ helm install mi-clase helm/ -n mi-clase --create-namespace \
   --set tls.secretName=mi-clase-tls
 ```
 
-### Self-signed — cert-manager generated (dev/internal)
+### Self-signed
 
 The chart creates a self-signed `Issuer` and `Certificate` automatically. Requires cert-manager to be installed.
 
