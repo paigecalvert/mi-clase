@@ -1,39 +1,45 @@
 # Mi Clase
 
-A Spanish class tracker for logging class sessions, notes, vocabulary, homework, and quizzes.
+An app for logging Spanish classes, including notes, vocabulary, homework, and quizzes.
 
-**Stack:** Node.js/Express · React/Vite · PostgreSQL · MinIO · LibreTranslate
+Node.js/Express · React/Vite · PostgreSQL · MinIO · LibreTranslate
 
 ---
 
 ## Quickstart
 
-1. Install Docker Desktop.
+1. Install Docker Desktop. See https://www.docker.com/products/docker-desktop/.
+
+1. On macOS, start Docker Desktop by opening the Docker app from Applications, or run:
+   ```bash
+   open -a Docker
+   ```
   
 1. Configure the environment:
-   ```
+   ```bash
    cp .env.example .env
    ```
 1. From the repo root, run:
-   ```
+   ```bash
    npm install
    npm run build:client
    npm run dev:local
    ```
+
 1. In a browser, open `http://localhost:3000`.
 
 ## Local development
 
-Use this flow for a hot reload of the frontend, rather than having to rebuild it to see your local changes.
+Use these steps for local development workflows when you want a hot reload of the frontend. This lets you see your changes on localhost immediately, without having to rebuild the client.
 
-1. From the repo root, run:
+1. From the repo root, run the following to start Docker services and the Express backend:
    ```
+   npm install
    npm run dev:local
    ```
-1. In another terminal window, run:
+1. In another terminal window, run the following to start a second development server for the frontend:
    ```
-   cd client
-   npm run dev
+   cd client && npm run dev
    ```
 
 ---
@@ -61,7 +67,9 @@ The default install includes:
 helm install mi-clase helm/ -n mi-clase --create-namespace
 ```
 
-### Install with Traefik ingress controller
+### Install options
+
+#### Install with Traefik ingress controller
 
 When `ingressController.enabled=true` the chart deploys Traefik and registers an IngressClass named `<release-name>-traefik`.
 
@@ -72,7 +80,7 @@ helm install mi-clase helm/ -n mi-clase --create-namespace \
   --set ingress.className=mi-clase-traefik
 ```
 
-### Install with external PostgreSQL
+#### Install with external PostgreSQL
 
 ```bash
 helm install mi-clase helm/ -n mi-clase --create-namespace \
@@ -84,24 +92,11 @@ helm install mi-clase helm/ -n mi-clase --create-namespace \
   --set externalPostgresql.password=<password>
 ```
 
-### Upgrade
-
-```bash
-helm upgrade mi-clase helm/ -n mi-clase
-```
-
-### Lint / dry-run
-
-```bash
-helm lint helm/
-helm template mi-clase helm/ --debug
-```
-
-## TLS options
+#### TLS options
 
 You can enable ingress and choose a TLS mode with `--set tls.mode=<mode>`.
 
-### Auto (cert-manager + Let's Encrypt)
+##### Install with Auto TLS (cert-manager + Let's Encrypt)
 
 The chart installs cert-manager and automatically creates a `ClusterIssuer` and provisions a certificate with a post-install job. DNS for the configured host must be pointed at the load balancer IP before the ACME challenge can complete.
 
@@ -122,7 +117,7 @@ Watch the certificate being provisioned:
 kubectl get certificate -n mi-clase -w
 ```
 
-### Bring your own certificate
+##### Bring your own certificate
 
 Create the TLS secret first, then install:
 
@@ -140,7 +135,7 @@ helm install mi-clase helm/ -n mi-clase --create-namespace \
   --set tls.secretName=mi-clase-tls
 ```
 
-### Self-signed
+##### Self-signed
 
 The chart creates a self-signed `Issuer` and `Certificate` automatically. Requires cert-manager to be installed.
 
