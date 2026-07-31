@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { listAllHomework } from '../api';
+import { createHomeworkFileDownloadUrl, listAllHomework } from '../api';
 
 const s = {
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
@@ -48,6 +48,11 @@ export default function MyHomework() {
     listAllHomework()
       .then(data => { setHomework(data); setLoading(false); });
   }, []);
+
+  const downloadFile = async (file) => {
+    const url = await createHomeworkFileDownloadUrl(file.object_key);
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
 
   if (loading) return <p style={{ color: '#6c757d' }}>Loading…</p>;
 
@@ -107,7 +112,7 @@ export default function MyHomework() {
                       {hw.files.map(f => (
                         <div key={f.id} style={s.fileRow}>
                           <span style={s.fileName}>📎 {f.filename}</span>
-                          <span style={s.downloadBtn}>Storage pending</span>
+                          <button style={s.downloadBtn} onClick={() => downloadFile(f)}>Download</button>
                         </div>
                       ))}
                     </div>

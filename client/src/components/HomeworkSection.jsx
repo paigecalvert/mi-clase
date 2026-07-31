@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { createHomework, deleteHomework, listHomework, updateHomework } from '../api';
+import {
+  addHomeworkFiles,
+  createHomework,
+  createHomeworkFileDownloadUrl,
+  deleteHomework,
+  deleteHomeworkFile,
+  listHomework,
+  updateHomework,
+} from '../api';
 
 const s = {
   section: { marginTop: 24 },
@@ -113,14 +121,11 @@ export default function HomeworkSection({ classId, onSaving = () => {}, onSaved 
   const addHomework = async () => {
     const files = addFormFileRef.current?.files;
     if (!hwTitle.trim() && !hwDesc.trim() && !files?.length) return;
-    if (files?.length) {
-      alert('File uploads will be re-enabled when Supabase Storage is wired up.');
-      return;
-    }
     setUploading(true);
     onSaving();
 
-    await createHomework(classId, hwTitle, hwDesc);
+    const homework = await createHomework(classId, hwTitle, hwDesc);
+    await addHomeworkFiles(classId, homework.id, files);
     setHwTitle('');
     setHwDesc('');
     if (addFormFileRef.current) addFormFileRef.current.value = '';
@@ -131,8 +136,13 @@ export default function HomeworkSection({ classId, onSaving = () => {}, onSaved 
 
   const handleAddFiles = async (hwId, fileList) => {
     if (!fileList?.length) return;
+    setUploadingTo(hwId);
+    onSaving();
+    await addHomeworkFiles(classId, hwId, fileList);
     if (addFileRefs.current[hwId]) addFileRefs.current[hwId].value = '';
-    alert('File uploads will be re-enabled when Supabase Storage is wired up.');
+    setUploadingTo(null);
+    fetchHomework();
+    onSaved();
   };
 
   const deleteHw = async (id) => {
@@ -143,7 +153,15 @@ export default function HomeworkSection({ classId, onSaving = () => {}, onSaved 
   };
 
   const deleteFile = async (hwId, fileId) => {
-    alert('File deletion will be re-enabled when Supabase Storage is wired up.');
+    onSaving();
+    await deleteHomeworkFile(fileId);
+    fetchHomework();
+    onSaved();
+  };
+
+  const downloadFile = async (file) => {
+    const url = await createHomeworkFileDownloadUrl(file.object_key);
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const openEdit = (hw) => {
@@ -219,6 +237,7 @@ export default function HomeworkSection({ classId, onSaving = () => {}, onSaved 
                     <div key={f.id} style={s.fileRow}>
                       <span style={s.fileName}>📎 {f.filename}</span>
                       <div style={s.fileActions}>
+                        <button style={s.downloadBtn} onClick={() => downloadFile(f)}>Download</button>
                         <button style={s.fileDelBtn} onClick={() => deleteFile(hw.id, f.id)}>✕</button>
                       </div>
                     </div>

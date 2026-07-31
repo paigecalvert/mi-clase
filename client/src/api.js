@@ -1,5 +1,7 @@
 import { supabase } from './supabaseClient';
 
+const HOMEWORK_FILES_BUCKET = 'homework-files';
+
 function throwIfError(error) {
   if (error) throw error;
 }
@@ -181,6 +183,49 @@ export async function createHomework(classId, title, description) {
   return { ...data, files: [] };
 }
 
+export async function addHomeworkFiles(classId, homeworkId, fileList) {
+  const files = Array.from(fileList || []);
+  if (files.length === 0) return [];
+
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  throwIfError(userError);
+
+  const userId = userData.user.id;
+  const uploaded = [];
+
+  for (const file of files) {
+    const extension = file.name.includes('.') ? `.${file.name.split('.').pop()}` : '';
+    const objectKey = `${userId}/classes/${classId}/homework/${homeworkId}/${crypto.randomUUID()}${extension}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from(HOMEWORK_FILES_BUCKET)
+      .upload(objectKey, file, {
+        contentType: file.type || 'application/octet-stream',
+        upsert: false,
+      });
+    throwIfError(uploadError);
+
+    const { data: metadata, error: metadataError } = await supabase
+      .from('homework_files')
+      .insert({
+        homework_id: homeworkId,
+        filename: file.name,
+        object_key: objectKey,
+      })
+      .select()
+      .single();
+
+    if (metadataError) {
+      await supabase.storage.from(HOMEWORK_FILES_BUCKET).remove([objectKey]);
+      throw metadataError;
+    }
+
+    uploaded.push(metadata);
+  }
+
+  return uploaded;
+}
+
 export async function updateHomework(id, title, description) {
   const { data, error } = await supabase
     .from('homework')
@@ -194,8 +239,50 @@ export async function updateHomework(id, title, description) {
 }
 
 export async function deleteHomework(id) {
+  const { data: files, error: filesError } = await supabase
+    .from('homework_files')
+    .select('object_key')
+    .eq('homework_id', id);
+
+  throwIfError(filesError);
+
+  if (files.length > 0) {
+    const { error: storageError } = await supabase.storage
+      .from(HOMEWORK_FILES_BUCKET)
+      .remove(files.map(file => file.object_key));
+    throwIfError(storageError);
+  }
+
   const { error } = await supabase.from('homework').delete().eq('id', id);
   throwIfError(error);
+}
+
+export async function deleteHomeworkFile(fileId) {
+  const { data: file, error: findError } = await supabase
+    .from('homework_files')
+    .select('object_key')
+    .eq('id', fileId)
+    .single();
+
+  throwIfError(findError);
+
+  const { error: storageError } = await supabase.storage
+    .from(HOMEWORK_FILES_BUCKET)
+    .remove([file.object_key]);
+
+  throwIfError(storageError);
+
+  const { error } = await supabase.from('homework_files').delete().eq('id', fileId);
+  throwIfError(error);
+}
+
+export async function createHomeworkFileDownloadUrl(objectKey) {
+  const { data, error } = await supabase.storage
+    .from(HOMEWORK_FILES_BUCKET)
+    .createSignedUrl(objectKey, 60);
+
+  throwIfError(error);
+  return data.signedUrl;
 }
 
 export async function listQuizzes() {

@@ -51,6 +51,8 @@ Use these steps for local development workflows when you want a hot reload of th
 
 Run [supabase/schema.sql](supabase/schema.sql) in the Supabase SQL editor to create the app tables and Row Level Security policies.
 
+If you already ran the schema and only need to add homework file storage, run [supabase/storage.sql](supabase/storage.sql) in the SQL editor.
+
 ## Supabase Edge Functions
 
 The vocabulary translator calls the `translate` Edge Function in [supabase/functions/translate/index.ts](supabase/functions/translate/index.ts).
