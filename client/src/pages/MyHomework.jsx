@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { listAllHomework } from '../api';
 
 const s = {
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
@@ -44,8 +45,7 @@ export default function MyHomework() {
   const [query, setQuery] = useState('');
 
   useEffect(() => {
-    fetch('/api/homework/all')
-      .then(r => r.json())
+    listAllHomework()
       .then(data => { setHomework(data); setLoading(false); });
   }, []);
 
@@ -107,12 +107,7 @@ export default function MyHomework() {
                       {hw.files.map(f => (
                         <div key={f.id} style={s.fileRow}>
                           <span style={s.fileName}>📎 {f.filename}</span>
-                          <a
-                            href={`/api/classes/${hw.class_id}/homework/${hw.id}/files/${f.id}/download`}
-                            style={s.downloadBtn}
-                          >
-                            Download
-                          </a>
+                          <span style={s.downloadBtn}>Storage pending</span>
                         </div>
                       ))}
                     </div>

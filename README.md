@@ -19,6 +19,11 @@ Node.js/Express · React/Vite · PostgreSQL · MinIO · LibreTranslate
    ```bash
    cp .env.example .env
    ```
+   Set the Supabase values in `.env`:
+   ```bash
+   VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+   VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+   ```
 1. From the repo root, run:
    ```bash
    npm install
@@ -41,6 +46,22 @@ Use these steps for local development workflows when you want a hot reload of th
    ```
    cd client && npm run dev
    ```
+
+## Supabase Schema
+
+Run [supabase/schema.sql](supabase/schema.sql) in the Supabase SQL editor to create the app tables and Row Level Security policies.
+
+## Supabase Edge Functions
+
+The vocabulary translator calls the `translate` Edge Function in [supabase/functions/translate/index.ts](supabase/functions/translate/index.ts).
+
+Set these Edge Function secrets in Supabase:
+
+```bash
+AZURE_TRANSLATOR_ENDPOINT=https://api.cognitive.microsofttranslator.com
+AZURE_TRANSLATOR_REGION=centralus
+AZURE_TRANSLATOR_KEY=your-azure-translator-key
+```
 
 ---
 

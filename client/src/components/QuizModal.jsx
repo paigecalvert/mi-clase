@@ -1,4 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import {
+  addQuizWord,
+  createQuiz,
+  deleteQuizWord,
+  getQuiz,
+  listAllVocabulary,
+  updateQuiz,
+} from '../api';
 
 const s = {
   overlay: {
@@ -87,9 +95,9 @@ export default function QuizModal({ quiz, onClose, onSave }) {
   const [addSelected, setAddSelected] = useState(new Set()); // vocab ids to add
 
   useEffect(() => {
-    fetch('/api/vocabulary/all').then(r => r.json()).then(setAllVocab);
+    listAllVocabulary().then(setAllVocab);
     if (isEdit) {
-      fetch(`/api/quizzes/${quiz.id}`).then(r => r.json()).then(q => setQuizWords(q.words || []));
+      getQuiz(quiz.id).then(q => setQuizWords(q.words || []));
     }
   }, []);
 
@@ -129,27 +137,15 @@ export default function QuizModal({ quiz, onClose, onSave }) {
     try {
       if (!isEdit) {
         const words = vocabWithTranslation.filter(v => selected.has(v.id));
-        await fetch('/api/quizzes', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, words }),
-        });
+        await createQuiz(name, words);
       } else {
-        await fetch(`/api/quizzes/${quiz.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name }),
-        });
+        await updateQuiz(quiz.id, { name });
         for (const id of removedIds) {
-          await fetch(`/api/quizzes/${quiz.id}/words/${id}`, { method: 'DELETE' });
+          await deleteQuizWord(quiz.id, id);
         }
         const toAdd = vocabWithTranslation.filter(v => addSelected.has(v.id));
         for (const w of toAdd) {
-          await fetch(`/api/quizzes/${quiz.id}/words`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ spanish_word: w.spanish_word, english_translation: w.english_translation }),
-          });
+          await addQuizWord(quiz.id, w);
         }
       }
       onSave();

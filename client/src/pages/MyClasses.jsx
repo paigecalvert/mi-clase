@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import ClassEntry from '../components/ClassEntry';
+import { createClass, deleteClass as deleteClassRecord, listClasses } from '../api';
 
 const s = {
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
@@ -45,9 +46,12 @@ export default function MyClasses() {
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
 
   const fetchClasses = () =>
-    fetch('/api/classes')
-      .then(r => r.json())
-      .then(data => { setClasses(data); setLoading(false); });
+    listClasses()
+      .then(data => { setClasses(data); setLoading(false); })
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
 
   useEffect(() => { fetchClasses(); }, []);
 
@@ -60,11 +64,7 @@ export default function MyClasses() {
 
   const addClass = () => {
     if (!date) return;
-    fetch('/api/classes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ class_date: date }),
-    }).then(() => { closeModal(); fetchClasses(); });
+    createClass(date).then(() => { closeModal(); fetchClasses(); });
   };
 
   const handleOverlayClick = (e) => {
@@ -73,7 +73,7 @@ export default function MyClasses() {
 
   const deleteClass = (id) => {
     if (!confirm('Delete this class and all its data?')) return;
-    fetch(`/api/classes/${id}`, { method: 'DELETE' }).then(fetchClasses);
+    deleteClassRecord(id).then(fetchClasses);
   };
 
   if (loading) return <p style={{ color: '#6c757d' }}>Loading…</p>;

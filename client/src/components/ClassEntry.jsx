@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import VocabSection from './VocabSection';
 import HomeworkSection from './HomeworkSection';
+import { getClass, saveNotes, updateClassDate } from '../api';
 
 const s = {
   card: {
@@ -102,9 +103,7 @@ export default function ClassEntry({ cls, onDelete, onUpdate }) {
 
   useEffect(() => {
     if (!open) return;
-    fetch(`/api/classes/${cls.id}`)
-      .then(r => r.json())
-      .then(data => setNotes(data.notes || ''));
+    getClass(cls.id).then(data => setNotes(data.notes || ''));
   }, [open, cls.id]);
 
   const handleNotesChange = useCallback((e) => {
@@ -113,11 +112,7 @@ export default function ClassEntry({ cls, onDelete, onUpdate }) {
     markSaving();
     clearTimeout(notesTimerRef.current);
     notesTimerRef.current = setTimeout(() => {
-      fetch(`/api/classes/${cls.id}/notes`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: val }),
-      }).then(() => markSaved());
+      saveNotes(cls.id, val).then(() => markSaved());
     }, 800);
   }, [cls.id, markSaving, markSaved]);
 
@@ -129,11 +124,7 @@ export default function ClassEntry({ cls, onDelete, onUpdate }) {
 
   const saveDate = async () => {
     if (!editDate) return;
-    await fetch(`/api/classes/${cls.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ class_date: editDate }),
-    });
+    await updateClassDate(cls.id, editDate);
     setEditDateOpen(false);
     onUpdate();
   };
