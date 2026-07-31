@@ -48,7 +48,7 @@ Use this flow for a hot reload of the frontend, rather than having to rebuild it
 
 ### Install with embedded dependencies (default)
 
-The chart must be installed into the `mi-clase` namespace. The support bundle collectors, health checks, and service discovery all target this namespace by name.
+The chart can be installed into any namespace. The examples below use `mi-clase`.
 
 The default install includes:
 
@@ -57,7 +57,6 @@ The default install includes:
 - Redis (bitnami subchart, `redis.enabled: true`)
 - MinIO (minio subchart, `minio.enabled: true`)
 - LibreTranslate (`libretranslate.enabled: true`)
-- Replicated SDK (always included)
 
 ```bash
 helm install mi-clase helm/ -n mi-clase --create-namespace

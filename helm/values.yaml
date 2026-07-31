@@ -3,7 +3,7 @@ global:
     allowInsecureImages: true
 
 image:
-  repository: proxy.miclase.site/proxy/mi-clase/ghcr.io/paigecalvert/mi-clase
+  repository: ghcr.io/paigecalvert/mi-clase
   tag: "latest"
   pullPolicy: IfNotPresent
 
@@ -80,11 +80,6 @@ postgresql:
     database: mi_clase
     username: mi_clase
     password: mi_clase
-  image:
-    registry: proxy.miclase.site
-    repository: proxy/mi-clase/docker.io/bitnami/postgresql
-    pullSecrets:
-      - enterprise-pull-secret
 
 externalPostgresql:
   host: ""
@@ -99,11 +94,6 @@ redis:
   architecture: standalone
   auth:
     enabled: false
-  image:
-    registry: proxy.miclase.site
-    repository: proxy/mi-clase/docker.io/bitnami/redis
-    pullSecrets:
-      - enterprise-pull-secret
 
 externalRedis:
   host: ""
@@ -126,10 +116,6 @@ minio:
     limits:
       memory: "1Gi"
       cpu: "500m"
-  image:
-    repository: proxy.miclase.site/proxy/mi-clase/quay.io/minio/minio
-  imagePullSecrets:
-    - name: enterprise-pull-secret
 
 externalMinio:
   host: ""
@@ -141,17 +127,11 @@ externalMinio:
 fileStorage:
   bucket: mi-clase
 
-# ── Features ────────────────────────────────────────────────────────────────
-features:
-  # When set to "true", quizzes are explicitly enabled (KOTS/EC path via license entitlement).
-  # When empty, the app falls back to checking the SDK at runtime (plain Helm path).
-  quizzesEnabled: ""
-
 # ── LibreTranslate ──────────────────────────────────────────────────────────
 libretranslate:
   enabled: true
   image:
-    repository: proxy.miclase.site/proxy/mi-clase/docker.io/libretranslate/libretranslate
+    repository: libretranslate/libretranslate
     tag: latest
     pullPolicy: IfNotPresent
   # URL to use when libretranslate.enabled is false (e.g. hosted instance)
