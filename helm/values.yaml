@@ -88,18 +88,6 @@ externalPostgresql:
   username: mi_clase
   password: ""
 
-# ── Redis ───────────────────────────────────────────────────────────────────
-redis:
-  enabled: true
-  architecture: standalone
-  auth:
-    enabled: false
-
-externalRedis:
-  host: ""
-  port: 6379
-  password: ""
-
 # ── MinIO ───────────────────────────────────────────────────────────────────
 minio:
   enabled: true

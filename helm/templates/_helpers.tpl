@@ -71,31 +71,6 @@ PostgreSQL password.
 {{- end }}
 
 {{/*
-Redis host.
-*/}}
-{{- define "mi-clase.redisHost" -}}
-{{- if .Values.redis.enabled -}}
-{{ .Release.Name }}-redis-master
-{{- else -}}
-{{ required "externalRedis.host is required when redis.enabled is false" .Values.externalRedis.host }}
-{{- end -}}
-{{- end }}
-
-{{/*
-Redis port.
-*/}}
-{{- define "mi-clase.redisPort" -}}
-{{- if .Values.redis.enabled -}}6379{{- else -}}{{ .Values.externalRedis.port }}{{- end -}}
-{{- end }}
-
-{{/*
-Redis password.
-*/}}
-{{- define "mi-clase.redisPassword" -}}
-{{- if .Values.redis.enabled -}}{{ .Values.redis.auth.password | default "" }}{{- else -}}{{ .Values.externalRedis.password }}{{- end -}}
-{{- end }}
-
-{{/*
 MinIO endpoint.
 */}}
 {{- define "mi-clase.minioEndpoint" -}}

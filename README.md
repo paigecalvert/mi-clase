@@ -2,7 +2,7 @@
 
 A Spanish class tracker for logging class sessions, notes, vocabulary, homework, and quizzes.
 
-**Stack:** Node.js/Express · React/Vite · PostgreSQL · Redis · MinIO · LibreTranslate
+**Stack:** Node.js/Express · React/Vite · PostgreSQL · MinIO · LibreTranslate
 
 ---
 
@@ -54,7 +54,6 @@ The default install includes:
 
 - mi-clase app (Node.js server + React frontend)
 - PostgreSQL (bitnami subchart, `postgresql.enabled: true`)
-- Redis (bitnami subchart, `redis.enabled: true`)
 - MinIO (minio subchart, `minio.enabled: true`)
 - LibreTranslate (`libretranslate.enabled: true`)
 
@@ -83,16 +82,6 @@ helm install mi-clase helm/ -n mi-clase --create-namespace \
   --set externalPostgresql.database=mi_clase \
   --set externalPostgresql.username=mi_clase \
   --set externalPostgresql.password=<password>
-```
-
-### Install with external Redis
-
-```bash
-helm install mi-clase helm/ -n mi-clase --create-namespace \
-  --set redis.enabled=false \
-  --set externalRedis.host=<host> \
-  --set externalRedis.port=6379 \
-  --set externalRedis.password=<password>
 ```
 
 ### Upgrade

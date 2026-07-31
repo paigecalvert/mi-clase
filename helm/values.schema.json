@@ -141,32 +141,6 @@
         "password": { "type": "string" }
       }
     },
-    "redis": {
-      "type": "object",
-      "properties": {
-        "enabled": { "type": "boolean" },
-        "architecture": {
-          "type": "string",
-          "enum": ["standalone", "replication"]
-        },
-        "auth": {
-          "type": "object",
-          "properties": {
-            "enabled": { "type": "boolean" },
-            "password": { "type": "string" }
-          }
-        }
-      }
-    },
-    "externalRedis": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "host": { "type": "string" },
-        "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
-        "password": { "type": "string" }
-      }
-    },
     "minio": {
       "type": "object",
       "properties": {

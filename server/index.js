@@ -4,7 +4,6 @@ const cors = require('cors');
 const fileUpload = require('express-fileupload');
 const path = require('path');
 const { initDb, pool } = require('./db');
-const redis = require('./redis');
 const { initStorage } = require('./storage');
 
 const app = express();
@@ -16,19 +15,13 @@ app.use(fileUpload({ limits: { fileSize: 50 * 1024 * 1024 } })); // 50MB limit
 
 // ── Health endpoint ──────────────────────────────────────────────────────────
 app.get('/health', async (req, res) => {
-  const health = { status: 'ok', database: 'ok', cache: 'ok' };
+  const health = { status: 'ok', database: 'ok' };
 
   try {
     await pool.query('SELECT 1');
   } catch {
     health.database = 'error';
     health.status = 'error';
-  }
-
-  try {
-    await redis.ping();
-  } catch {
-    health.cache = 'error';
   }
 
   res.status(health.status === 'ok' ? 200 : 503).json(health);
@@ -64,13 +57,6 @@ async function start() {
       if (attempt === 10) process.exit(1);
       await new Promise(r => setTimeout(r, 3000));
     }
-  }
-
-  try {
-    await redis.connect();
-    console.log('[redis] connected');
-  } catch (err) {
-    console.warn('[redis] could not connect:', err.message);
   }
 
   try {
