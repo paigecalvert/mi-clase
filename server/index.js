@@ -3,12 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const fileUpload = require('express-fileupload');
 const path = require('path');
-const { execFile } = require('child_process');
-const fs = require('fs');
 const { initDb, pool } = require('./db');
-const redis = require('./redis');
 const { initStorage } = require('./storage');
-const { getLicenseInfo, getUpdates, uploadSupportBundle } = require('./replicated');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -19,7 +15,7 @@ app.use(fileUpload({ limits: { fileSize: 50 * 1024 * 1024 } })); // 50MB limit
 
 // ── Health endpoint ──────────────────────────────────────────────────────────
 app.get('/health', async (req, res) => {
-  const health = { status: 'ok', database: 'ok', cache: 'ok' };
+  const health = { status: 'ok', database: 'ok' };
 
   try {
     await pool.query('SELECT 1');
@@ -28,52 +24,7 @@ app.get('/health', async (req, res) => {
     health.status = 'error';
   }
 
-  try {
-    await redis.ping();
-  } catch {
-    health.cache = 'error';
-  }
-
   res.status(health.status === 'ok' ? 200 : 503).json(health);
-});
-
-// ── Support bundle ────────────────────────────────────────────────────────────
-app.post('/api/support-bundle', async (req, res) => {
-  const outputPath = `/tmp/support-bundle-${Date.now()}.tar.gz`;
-
-  try {
-    await new Promise((resolve, reject) => {
-      execFile(
-        'support-bundle',
-        ['--load-cluster-specs', '--interactive=false', `--output=${outputPath}`],
-        { timeout: 180000 },
-        (err, _stdout, stderr) => {
-          if (err) reject(new Error(stderr || err.message));
-          else resolve();
-        }
-      );
-    });
-
-    const bundleData = fs.readFileSync(outputPath);
-    const result = await uploadSupportBundle(bundleData);
-    res.json(result);
-  } catch (err) {
-    console.error('[support-bundle]', err.message);
-    res.status(500).json({ error: err.message });
-  } finally {
-    try { fs.unlinkSync(outputPath); } catch {}
-  }
-});
-
-// ── Replicated SDK proxy ──────────────────────────────────────────────────────
-app.get('/api/license', async (req, res) => {
-  try { res.json(await getLicenseInfo()); }
-  catch { res.json(null); }
-});
-
-app.get('/api/updates', async (req, res) => {
-  try { res.json(await getUpdates()); }
-  catch { res.json([]); }
 });
 
 // ── API routes ────────────────────────────────────────────────────────────────
@@ -106,13 +57,6 @@ async function start() {
       if (attempt === 10) process.exit(1);
       await new Promise(r => setTimeout(r, 3000));
     }
-  }
-
-  try {
-    await redis.connect();
-    console.log('[redis] connected');
-  } catch (err) {
-    console.warn('[redis] could not connect:', err.message);
   }
 
   try {
