@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import QuizModal from '../components/QuizModal';
 import QuizRunner from '../components/QuizRunner';
+import { deleteQuiz as deleteQuizRecord, getQuiz, listQuizzes, updateQuiz } from '../api';
 
 const s = {
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
@@ -48,9 +49,8 @@ export default function MyQuizzes() {
   const [runQuiz, setRunQuiz] = useState(null);
 
   const fetchQuizzes = () =>
-    fetch('/api/quizzes').then(async res => {
-      if (res.status === 403) { setLocked(true); setLoading(false); return; }
-      setQuizzes(await res.json());
+    listQuizzes().then(data => {
+      setQuizzes(data);
       setLoading(false);
     });
 
@@ -58,16 +58,12 @@ export default function MyQuizzes() {
 
   const deleteQuiz = (id) => {
     if (!confirm('Delete this quiz?')) return;
-    fetch(`/api/quizzes/${id}`, { method: 'DELETE' }).then(fetchQuizzes);
+    deleteQuizRecord(id).then(fetchQuizzes);
   };
 
   const handleComplete = (correct, total) => {
     if (!runQuiz) return;
-    fetch(`/api/quizzes/${runQuiz.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ last_score_correct: correct, last_score_total: total }),
-    }).then(fetchQuizzes);
+    updateQuiz(runQuiz.id, { last_score_correct: correct, last_score_total: total }).then(fetchQuizzes);
   };
 
   if (loading) return <p style={{ color: '#6c757d' }}>Loading…</p>;
@@ -101,9 +97,7 @@ export default function MyQuizzes() {
               </div>
             </div>
             <div style={s.cardBtns}>
-              <button style={s.playBtn} onClick={() => {
-                fetch(`/api/quizzes/${q.id}`).then(r => r.json()).then(setRunQuiz);
-              }}>▶ Play</button>
+              <button style={s.playBtn} onClick={() => getQuiz(q.id).then(setRunQuiz)}>▶ Play</button>
               <button style={s.editBtn} onClick={() => setEditQuiz(q)}>Edit</button>
               <button style={s.deleteBtn} onClick={() => deleteQuiz(q.id)}>✕</button>
             </div>

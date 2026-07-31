@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import FlashCardRunner from '../components/FlashCardRunner';
+import { listAllVocabulary } from '../api';
 
 function shuffle(arr) {
   const a = [...arr];
@@ -62,7 +63,7 @@ export default function MyVocabulary() {
   const [flashcards, setFlashcards] = useState(null); // { title, words } | null
 
   useEffect(() => {
-    fetch('/api/vocabulary/all').then(r => r.json()).then(data => {
+    listAllVocabulary().then(data => {
       setVocab(data);
       setLoading(false);
     });

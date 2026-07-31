@@ -1,4 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
+import {
+  addHomeworkFiles,
+  createHomework,
+  createHomeworkFileDownloadUrl,
+  deleteHomework,
+  deleteHomeworkFile,
+  listHomework,
+  updateHomework,
+} from '../api';
 
 const s = {
   section: { marginTop: 24 },
@@ -105,9 +114,7 @@ export default function HomeworkSection({ classId, onSaving = () => {}, onSaved 
   const addFileRefs = useRef({});
 
   const fetchHomework = () =>
-    fetch(`/api/classes/${classId}/homework`)
-      .then(r => r.json())
-      .then(setHomework);
+    listHomework(classId).then(setHomework);
 
   useEffect(() => { fetchHomework(); }, [classId]);
 
@@ -116,12 +123,9 @@ export default function HomeworkSection({ classId, onSaving = () => {}, onSaved 
     if (!hwTitle.trim() && !hwDesc.trim() && !files?.length) return;
     setUploading(true);
     onSaving();
-    const form = new FormData();
-    form.append('title', hwTitle);
-    form.append('description', hwDesc);
-    if (files) for (const f of files) form.append('file', f);
 
-    await fetch(`/api/classes/${classId}/homework`, { method: 'POST', body: form });
+    const homework = await createHomework(classId, hwTitle, hwDesc);
+    await addHomeworkFiles(classId, homework.id, files);
     setHwTitle('');
     setHwDesc('');
     if (addFormFileRef.current) addFormFileRef.current.value = '';
@@ -134,9 +138,7 @@ export default function HomeworkSection({ classId, onSaving = () => {}, onSaved 
     if (!fileList?.length) return;
     setUploadingTo(hwId);
     onSaving();
-    const form = new FormData();
-    for (const f of fileList) form.append('file', f);
-    await fetch(`/api/classes/${classId}/homework/${hwId}/files`, { method: 'POST', body: form });
+    await addHomeworkFiles(classId, hwId, fileList);
     if (addFileRefs.current[hwId]) addFileRefs.current[hwId].value = '';
     setUploadingTo(null);
     fetchHomework();
@@ -145,16 +147,21 @@ export default function HomeworkSection({ classId, onSaving = () => {}, onSaved 
 
   const deleteHw = async (id) => {
     onSaving();
-    await fetch(`/api/classes/${classId}/homework/${id}`, { method: 'DELETE' });
+    await deleteHomework(id);
     fetchHomework();
     onSaved();
   };
 
   const deleteFile = async (hwId, fileId) => {
     onSaving();
-    await fetch(`/api/classes/${classId}/homework/${hwId}/files/${fileId}`, { method: 'DELETE' });
+    await deleteHomeworkFile(fileId);
     fetchHomework();
     onSaved();
+  };
+
+  const downloadFile = async (file) => {
+    const url = await createHomeworkFileDownloadUrl(file.object_key);
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const openEdit = (hw) => {
@@ -165,11 +172,7 @@ export default function HomeworkSection({ classId, onSaving = () => {}, onSaved 
 
   const saveEdit = async () => {
     onSaving();
-    await fetch(`/api/classes/${classId}/homework/${editing.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: editTitle, description: editDesc }),
-    });
+    await updateHomework(editing.id, editTitle, editDesc);
     setEditing(null);
     fetchHomework();
     onSaved();
@@ -234,12 +237,7 @@ export default function HomeworkSection({ classId, onSaving = () => {}, onSaved 
                     <div key={f.id} style={s.fileRow}>
                       <span style={s.fileName}>📎 {f.filename}</span>
                       <div style={s.fileActions}>
-                        <a
-                          href={`/api/classes/${classId}/homework/${hw.id}/files/${f.id}/download`}
-                          style={s.downloadBtn}
-                        >
-                          Download
-                        </a>
+                        <button style={s.downloadBtn} onClick={() => downloadFile(f)}>Download</button>
                         <button style={s.fileDelBtn} onClick={() => deleteFile(hw.id, f.id)}>✕</button>
                       </div>
                     </div>

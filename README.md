@@ -19,6 +19,11 @@ Node.js/Express · React/Vite · PostgreSQL · MinIO · LibreTranslate
    ```bash
    cp .env.example .env
    ```
+   Set the Supabase values in `.env`:
+   ```bash
+   VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+   VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+   ```
 1. From the repo root, run:
    ```bash
    npm install

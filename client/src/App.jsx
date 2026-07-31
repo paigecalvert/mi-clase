@@ -1,8 +1,11 @@
+import { useEffect, useState } from 'react';
 import { NavLink, Routes, Route, Navigate } from 'react-router-dom';
+import Auth from './Auth';
 import MyClasses from './pages/MyClasses';
 import MyVocabulary from './pages/MyVocabulary';
 import MyHomework from './pages/MyHomework';
 import MyQuizzes from './pages/MyQuizzes';
+import { supabase } from './supabaseClient';
 
 const styles = {
   header: {
@@ -28,10 +31,52 @@ const styles = {
     color: '#fff',
     borderBottom: '3px solid #a7c957',
   },
+  userControls: {
+    marginLeft: 'auto',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.84)',
+  },
+  signOutButton: {
+    background: 'rgba(255,255,255,0.15)',
+    color: '#fff',
+    border: '1px solid rgba(255,255,255,0.4)',
+    borderRadius: 4,
+    padding: '6px 12px',
+    fontSize: 13,
+    cursor: 'pointer',
+  },
   main: { maxWidth: 900, margin: '0 auto', padding: '24px 16px' },
 };
 
 export default function App() {
+  const [session, setSession] = useState(null);
+  const [loadingSession, setLoadingSession] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setLoadingSession(false);
+    });
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession);
+      setLoadingSession(false);
+    });
+
+    return () => authListener.subscription.unsubscribe();
+  }, []);
+
+  if (loadingSession) {
+    return null;
+  }
+
+  if (!session) {
+    return <Auth />;
+  }
+
   return (
     <>
       <header style={styles.header}>
@@ -58,6 +103,12 @@ export default function App() {
             </NavLink>
           ))}
         </nav>
+        <div style={styles.userControls}>
+          <span>{session.user.email}</span>
+          <button type="button" onClick={() => supabase.auth.signOut()} style={styles.signOutButton}>
+            Sign Out
+          </button>
+        </div>
       </header>
       <main style={styles.main}>
         <Routes>

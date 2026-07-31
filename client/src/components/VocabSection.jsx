@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createVocabularyWord, deleteVocabularyWord, listVocabulary, translateWord } from '../api';
 
 const s = {
   section: { marginTop: 24 },
@@ -83,9 +84,7 @@ export default function VocabSection({ classId, onSaving = () => {}, onSaved = (
   const debounceRef = useRef(null);
 
   const fetchVocab = () =>
-    fetch(`/api/classes/${classId}/vocabulary`)
-      .then(r => r.json())
-      .then(setVocab);
+    listVocabulary(classId).then(setVocab);
 
   useEffect(() => { fetchVocab(); }, [classId]);
 
@@ -98,13 +97,8 @@ export default function VocabSection({ classId, onSaving = () => {}, onSaved = (
       setTranslating(true);
       try {
         const [src, tgt] = direction === 'es-en' ? ['es', 'en'] : ['en', 'es'];
-        const res = await fetch('/api/translate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ word: val, source: src, target: tgt }),
-        });
-        const data = await res.json();
-        if (data.translation) setTarget(data.translation);
+        const translation = await translateWord(val, src, tgt);
+        if (translation) setTarget(translation);
       } finally {
         setTranslating(false);
       }
@@ -124,11 +118,7 @@ export default function VocabSection({ classId, onSaving = () => {}, onSaved = (
     if (!spanish.trim()) return;
 
     onSaving();
-    await fetch(`/api/classes/${classId}/vocabulary`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ spanish_word: spanish, english_translation: english }),
-    });
+    await createVocabularyWord(classId, spanish, english);
     setSource('');
     setTarget('');
     fetchVocab();
@@ -137,7 +127,7 @@ export default function VocabSection({ classId, onSaving = () => {}, onSaved = (
 
   const deleteWord = async (id) => {
     onSaving();
-    await fetch(`/api/classes/${classId}/vocabulary/${id}`, { method: 'DELETE' });
+    await deleteVocabularyWord(classId, id);
     fetchVocab();
     onSaved();
   };
