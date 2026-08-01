@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import VocabSection from './VocabSection';
 import HomeworkSection from './HomeworkSection';
+import MarkdownNotes from './MarkdownNotes';
 import { getClass, saveNotes, updateClassDate } from '../api';
 
 const s = {
@@ -28,11 +29,6 @@ const s = {
   savedText: { fontSize: 12, color: '#386641', whiteSpace: 'nowrap' },
   body: { borderTop: '1px solid #f0f0f0', padding: '20px' },
   sectionTitle: { fontWeight: 700, fontSize: 15, marginBottom: 8, color: '#386641' },
-  textarea: {
-    width: '100%', minHeight: 120, border: '1px solid #dee2e6', borderRadius: 8,
-    padding: 12, fontSize: 14, fontFamily: 'inherit', resize: 'vertical',
-    outline: 'none', lineHeight: 1.5,
-  },
 
   // Edit date modal
   overlay: {
@@ -107,7 +103,7 @@ export default function ClassEntry({ cls, onDelete, onUpdate }) {
   }, [open, cls.id]);
 
   const handleNotesChange = useCallback((e) => {
-    const val = e.target.value;
+    const val = typeof e === 'string' ? e : e.target.value;
     setNotes(val);
     markSaving();
     clearTimeout(notesTimerRef.current);
@@ -160,11 +156,10 @@ export default function ClassEntry({ cls, onDelete, onUpdate }) {
         <div style={s.body}>
           <section>
             <div style={s.sectionTitle}>📝 Notes</div>
-            <textarea
-              style={s.textarea}
+            <MarkdownNotes
               value={notes}
               onChange={handleNotesChange}
-              placeholder="Take notes from today's class…"
+              onSavingShortcut={() => saveNotes(cls.id, notes).then(() => markSaved())}
             />
           </section>
 
