@@ -172,7 +172,7 @@ export default function ClassEntry({ cls, onDelete, onUpdate }) {
       {editDateOpen && (
         <div style={s.overlay} onClick={e => e.target === e.currentTarget && setEditDateOpen(false)}>
           <div style={s.modal}>
-            <h2 style={s.modalTitle}>Edit Class Date</h2>
+            <h2 style={s.modalTitle}>Edit class date</h2>
             <label style={s.label} htmlFor="edit-class-date">Select the class date</label>
             <input
               id="edit-class-date"

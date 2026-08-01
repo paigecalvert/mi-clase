@@ -80,8 +80,8 @@ export default function MyQuizzes() {
   return (
     <>
       <div style={s.header}>
-        <h1 style={s.h1}>My Quizzes</h1>
-        <button style={s.btn} onClick={() => setShowCreate(true)}>+ New Quiz</button>
+        <h1 style={s.h1}>Quizzes</h1>
+        <button style={s.btn} onClick={() => setShowCreate(true)}>+ Create a quiz</button>
       </div>
 
       {quizzes.length === 0 ? (

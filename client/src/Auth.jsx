@@ -116,7 +116,7 @@ export default function Auth() {
             />
           </label>
           <button type="submit" disabled={status === 'loading'} style={styles.button}>
-            {status === 'loading' ? 'Working...' : (isSignUp ? 'Create Account' : 'Sign In')}
+            {status === 'loading' ? 'Working...' : (isSignUp ? 'Create account' : 'Sign in')}
           </button>
         </form>
 

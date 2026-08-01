@@ -309,7 +309,7 @@ export async function getQuiz(id) {
 export async function createQuiz(name, words) {
   const { data: quiz, error } = await supabase
     .from('quizzes')
-    .insert({ name: name || 'Untitled Quiz' })
+    .insert({ name: name || 'Untitled quiz' })
     .select()
     .single();
 

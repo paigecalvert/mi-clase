@@ -76,7 +76,7 @@ export default function MyHomework() {
   return (
     <>
       <div style={s.header}>
-        <h1 style={s.h1}>My Homework</h1>
+        <h1 style={s.h1}>Homework</h1>
         <input
           style={s.search}
           placeholder="Search homework…"

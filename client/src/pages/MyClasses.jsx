@@ -81,8 +81,8 @@ export default function MyClasses() {
   return (
     <>
       <div style={s.header}>
-        <h1 style={s.h1}>My Classes</h1>
-        <button style={s.btn} onClick={openModal}>+ Add a Class</button>
+        <h1 style={s.h1}>Classes</h1>
+        <button style={s.btn} onClick={openModal}>+ Add a class</button>
       </div>
 
       {classes.length === 0 ? (
@@ -96,7 +96,7 @@ export default function MyClasses() {
       {showModal && (
         <div style={s.overlay} onClick={handleOverlayClick}>
           <div style={s.modal}>
-            <h2 style={s.modalTitle}>Add a Class</h2>
+            <h2 style={s.modalTitle}>Add a class</h2>
             <label style={s.label} htmlFor="class-date">Select the class date</label>
             <input
               id="class-date"

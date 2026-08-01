@@ -156,7 +156,7 @@ export default function QuizRunner({ quiz, onClose, onComplete }) {
           const pct = Math.round((correct / words.length) * 100);
           return (
             <>
-              <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 16 }}>Quiz Complete!</div>
+              <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 16 }}>Quiz complete!</div>
               <div style={s.scoreBig}>{correct}/{words.length}</div>
               <div style={s.scorePct}>{pct}% correct</div>
               <div style={s.resultsList}>

@@ -223,7 +223,7 @@ export default function HomeworkSection({ classId, onSaving = () => {}, onSaved 
       {createOpen && (
         <div style={s.overlay} onClick={e => e.target === e.currentTarget && closeCreate()}>
           <div style={s.modal}>
-            <h2 style={s.modalTitle}>Add Homework</h2>
+            <h2 style={s.modalTitle}>Add homework</h2>
             <label style={s.label} htmlFor="new-hw-title">Title</label>
             <input
               id="new-hw-title"
@@ -259,7 +259,7 @@ export default function HomeworkSection({ classId, onSaving = () => {}, onSaved 
       {editing && (
         <div style={s.overlay} onClick={e => e.target === e.currentTarget && !savingEdit && setEditing(null)}>
           <div style={s.modal}>
-            <h2 style={s.modalTitle}>Edit Homework</h2>
+            <h2 style={s.modalTitle}>Edit homework</h2>
             <label style={s.label} htmlFor="edit-hw-title">Title</label>
             <input
               id="edit-hw-title"
