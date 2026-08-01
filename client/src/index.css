@@ -5,3 +5,63 @@ body {
   background: #f2e8cf;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
+
+.notes-rich-editor:focus {
+  outline: none;
+}
+
+.notes-rich-editor h1,
+.notes-rich-editor h2,
+.notes-rich-editor h3,
+.notes-rich-editor p,
+.notes-rich-editor ul,
+.notes-rich-editor ol,
+.notes-rich-editor blockquote {
+  margin-top: 0;
+}
+
+.notes-rich-editor h1 {
+  font-size: 24px;
+  line-height: 1.25;
+  margin-bottom: 10px;
+}
+
+.notes-rich-editor h2 {
+  font-size: 19px;
+  line-height: 1.3;
+  margin-bottom: 8px;
+}
+
+.notes-rich-editor h3 {
+  font-size: 16px;
+  line-height: 1.35;
+  margin-bottom: 8px;
+}
+
+.notes-rich-editor p {
+  margin-bottom: 8px;
+}
+
+.notes-rich-editor ul,
+.notes-rich-editor ol {
+  padding-left: 24px;
+  margin-bottom: 8px;
+}
+
+.notes-rich-editor li {
+  margin-bottom: 4px;
+}
+
+.notes-rich-editor blockquote {
+  border-left: 3px solid #a7c957;
+  color: #495057;
+  margin-bottom: 8px;
+  padding-left: 12px;
+}
+
+.notes-rich-editor code {
+  background: #f2e8cf;
+  border: 1px solid #e9d8a6;
+  border-radius: 4px;
+  padding: 1px 4px;
+}
