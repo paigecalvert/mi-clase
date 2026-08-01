@@ -72,7 +72,7 @@ export default function MyVocabulary() {
   const openRandom = () => {
     const withTranslation = vocab.filter(w => w.english_translation?.trim());
     const words = shuffle(withTranslation).slice(0, 10);
-    setFlashcards({ title: 'Random Flashcards', words });
+    setFlashcards({ title: 'Random flashcards', words });
   };
 
   if (loading) return <p style={{ color: '#6c757d' }}>Loading…</p>;
@@ -95,7 +95,7 @@ export default function MyVocabulary() {
   return (
     <>
       <div style={s.header}>
-        <h1 style={s.h1}>My Vocabulary</h1>
+        <h1 style={s.h1}>Vocabulary</h1>
         <div style={s.headerRight}>
           <input
             style={s.search}

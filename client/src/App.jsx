@@ -13,19 +13,21 @@ const styles = {
     color: '#fff',
     padding: '0 24px',
     display: 'flex',
-    alignItems: 'center',
+    alignItems: 'stretch',
     gap: 32,
+    minHeight: 60,
     boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
   },
-  title: { margin: '0 24px 0 0', fontSize: 22, fontWeight: 700, padding: '16px 0' },
-  nav: { display: 'flex', gap: 4 },
+  title: { margin: '0 24px 0 0', fontSize: 22, fontWeight: 700, display: 'flex', alignItems: 'center' },
+  nav: { display: 'flex', gap: 4, alignItems: 'stretch' },
   navLink: {
     color: 'rgba(255,255,255,0.75)',
     textDecoration: 'none',
-    padding: '18px 16px',
+    padding: '0 16px',
     fontSize: 15,
     borderBottom: '3px solid transparent',
-    display: 'inline-block',
+    display: 'flex',
+    alignItems: 'center',
   },
   navLinkActive: {
     color: '#fff',
@@ -86,10 +88,10 @@ export default function App() {
         </span>
         <nav style={styles.nav}>
           {[
-            { to: '/classes', label: 'My Classes' },
-            { to: '/vocabulary', label: 'My Vocabulary' },
-            { to: '/homework', label: 'My Homework' },
-            { to: '/quizzes', label: 'My Quizzes' },
+            { to: '/classes', label: 'Classes' },
+            { to: '/vocabulary', label: 'Vocabulary' },
+            { to: '/homework', label: 'Homework' },
+            { to: '/quizzes', label: 'Quizzes' },
           ].map(({ to, label }) => (
             <NavLink
               key={to}
@@ -106,7 +108,7 @@ export default function App() {
         <div style={styles.userControls}>
           <span>{session.user.email}</span>
           <button type="button" onClick={() => supabase.auth.signOut()} style={styles.signOutButton}>
-            Sign Out
+            Sign out
           </button>
         </div>
       </header>

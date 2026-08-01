@@ -165,7 +165,7 @@ export default function QuizModal({ quiz, onClose, onSave }) {
   return (
     <div style={s.overlay} onClick={e => e.target === e.currentTarget && onClose()}>
       <div style={s.modal}>
-        <h2 style={s.modalTitle}>{isEdit ? 'Edit Quiz' : 'Create Quiz'}</h2>
+        <h2 style={s.modalTitle}>{isEdit ? 'Edit quiz' : 'Create quiz'}</h2>
 
         <label style={s.label}>Quiz name</label>
         <input
