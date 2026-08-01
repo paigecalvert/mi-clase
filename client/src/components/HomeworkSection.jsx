@@ -277,7 +277,7 @@ export default function HomeworkSection({ classId, onSaving = () => {}, onSaved 
             />
             {editing.files?.length > 0 && (
               <>
-                <label style={s.label}>Current files</label>
+                <label style={s.label}>Files</label>
                 <div style={{ ...s.fileList, marginBottom: 14 }}>
                   {editing.files.map(file => (
                     <div key={file.id} style={s.fileRow}>
